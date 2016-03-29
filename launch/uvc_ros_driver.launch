@@ -1,0 +1,10 @@
+<launch>
+
+  <arg name="hflip" default="true" />     <!-- Horizontal flip -->
+
+  <!-- camera node -->
+  <node pkg="uvc_ros_driver" name="uvc_ros_driver_node" type="uvc_ros_driver_node" output="screen">
+    <param name="hflip"   value="$(arg hflip)" />
+  </node>
+
+</launch>
