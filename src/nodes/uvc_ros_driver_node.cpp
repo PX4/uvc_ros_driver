@@ -44,6 +44,8 @@
 #include <unistd.h>
 #include <sstream>
 
+#include "serial_port.h"
+
 #include <ros/ros.h>
 #include "ait_ros_messages/VioSensorMsg.h"
 #include <std_msgs/String.h>
@@ -239,6 +241,48 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 
 int main(int argc, char **argv)
 {
+
+	Serial_Port sp = Serial_Port("/dev/serial/by-id/usb-FTDI_FT230X_Basic_UART_DJ00QGO9-if00-port0", 115200);
+
+	sp.open_serial();
+
+	mavlink_message_t msg;
+
+	char name_buf[16] = {};
+
+	uint8_t local_sys = 1;
+	uint8_t local_comp = 1;
+
+	uint8_t target_sys = 99;
+	uint8_t target_comp = 55;
+
+	/* SETCALIB */
+	strncpy(name_buf, "SETCALIB", MAVLINK_MSG_PARAM_VALUE_FIELD_PARAM_ID_LEN);
+	mavlink_msg_param_set_pack(local_sys, local_comp, &msg, target_sys, target_comp, name_buf, 1.0f, MAVLINK_TYPE_FLOAT);
+	int ret = sp.write_message(msg);
+	printf("ret: %d\n", ret);
+
+	strncpy(name_buf, "SETCALIB", MAVLINK_MSG_PARAM_VALUE_FIELD_PARAM_ID_LEN);
+	mavlink_msg_param_set_pack(local_sys, local_comp, &msg, target_sys, target_comp, name_buf, 1.0f, MAVLINK_TYPE_FLOAT);
+	ret = sp.write_message(msg);
+	printf("ret: %d\n", ret);
+
+	strncpy(name_buf, "SETCALIB", MAVLINK_MSG_PARAM_VALUE_FIELD_PARAM_ID_LEN);
+	mavlink_msg_param_set_pack(local_sys, local_comp, &msg, target_sys, target_comp, name_buf, 1.0f, MAVLINK_TYPE_FLOAT);
+	ret = sp.write_message(msg);
+	printf("ret: %d\n", ret);
+
+	strncpy(name_buf, "SETCALIB", MAVLINK_MSG_PARAM_VALUE_FIELD_PARAM_ID_LEN);
+	mavlink_msg_param_set_pack(local_sys, local_comp, &msg, target_sys, target_comp, name_buf, 1.0f, MAVLINK_TYPE_FLOAT);
+	ret = sp.write_message(msg);
+	printf("ret: %d\n", ret);
+
+	strncpy(name_buf, "SETCALIB", MAVLINK_MSG_PARAM_VALUE_FIELD_PARAM_ID_LEN);
+	mavlink_msg_param_set_pack(local_sys, local_comp, &msg, target_sys, target_comp, name_buf, 1.0f, MAVLINK_TYPE_FLOAT);
+	ret = sp.write_message(msg);
+	printf("ret: %d\n", ret);
+
+	sp.close_serial();
 
 	ros::init(argc, argv, "uvc_ros_driver");
 	ros::NodeHandle nh("~");  // private nodehandle

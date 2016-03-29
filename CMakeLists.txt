@@ -117,6 +117,7 @@ catkin_package(
 include_directories(
   ${catkin_INCLUDE_DIRS}
   include
+  src/nodes/c_library
 )
 
 ## Declare a C++ library
@@ -130,7 +131,10 @@ include_directories(
 # add_dependencies(uvc_ros_driver ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-add_executable(uvc_ros_driver_node src/nodes/uvc_ros_driver_node.cpp)
+add_executable(uvc_ros_driver_node
+	src/nodes/uvc_ros_driver_node.cpp
+	src/nodes/serial_port.cpp
+)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
