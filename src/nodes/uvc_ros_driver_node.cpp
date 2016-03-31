@@ -216,7 +216,7 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 
 	ros::Time stamp_time = msg.header.stamp;
 
-	printf("%d imu messages\n", msg.imu.size());
+	printf("%lu imu messages\n", msg.imu.size());
 
 	for (int i = 0; i < msg.imu.size(); i++) {
 		msg.imu[i].header.stamp = stamp_time - ros::Duration(elapsed * (double(i) / msg.imu.size()));
