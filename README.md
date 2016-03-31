@@ -3,7 +3,11 @@
 # Prerequisites
 You will need [ROS indigo](http://wiki.ros.org/indigo/Installation/Ubuntu) and the [`ait_ros_messages`](https://github.com/ethz-ait/ait_ros_messages) ROS package.
 
-You need `libusb` installed.
+You need `libusb` installed:
+
+```bash
+sudo apt-get install libusb-1.0-0-dev
+```
 
 You also need [`libuvc`](https://github.com/ktossell/libuvc), which can be installed with the following commands:
 ```bash
