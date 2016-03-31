@@ -20,16 +20,32 @@ make && sudo make install
 ```
 
 # Installation
-Clone this repository in your catkin workspace and build.
+Clone this repository in your catkin workspace.
+
+## MAVLink Submodule
+
+This package depends on MAVLink. To initialize and check out the submodule, run this:
+
+```bash
+git submodule init --recursive
+git submodule update --recursive
+```
+
+## Building
+
+Build using `catkin_make` according to the ROS instructions on http://ros.org.
+
+## Set up Permissions
 
 To get proper permissions for the USB device, run the following script with the device attached:
 ```bash
+sudo usermod -a -G dialout $USER
 sudo ./fix_permissions.sh
 ```
 Check the device vendor and product id from the list and enter them when prompted. The printed list has the format
 `... {idDevice:idProduct} ...`.
 
-Unplug the device and plug it back in to load it with the new permissions.
+Log out of Ubuntu and Log back in. Unplug the device and plug it back in to load it with the new permissions.
 
 # Running the driver
 ```bash
