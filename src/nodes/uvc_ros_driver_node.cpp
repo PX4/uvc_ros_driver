@@ -242,7 +242,7 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 int main(int argc, char **argv)
 {
 
-	Serial_Port sp = Serial_Port("/dev/serial/by-id/usb-FTDI_FT230X_Basic_UART_DJ00QGO9-if00-port0", 115200);
+	Serial_Port sp = Serial_Port("/dev/serial/by-id/usb-FTDI_FT230X_Basic_UART_DJ00QG09-if00-port0", 115200);
 
 	sp.open_serial();
 
@@ -313,7 +313,7 @@ int main(int argc, char **argv)
 	}
 
 	/* Locates the first attached UVC device, stores in dev */
-	res = uvc_find_device(ctx, &dev, 0, 0, NULL); /* filter devices: vendor_id, product_id, "serial_num" */
+	res = uvc_find_device(ctx, &dev, 0x04b4, 0, NULL); /* filter devices: vendor_id, product_id, "serial_num" */
 
 	if (res < 0) {
 		uvc_perror(res, "uvc_find_device"); /* no devices found */
