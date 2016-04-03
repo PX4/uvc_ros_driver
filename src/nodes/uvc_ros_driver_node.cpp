@@ -39,21 +39,23 @@
  *  The code below is based on the example provided at https://int80k.com/libuvc/doc/
  */
 
-#include "libuvc/libuvc.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <sstream>
 
-#include "serial_port.h"
-
+#include "libuvc/libuvc.h"
 #include <ros/ros.h>
+
 #include "ait_ros_messages/VioSensorMsg.h"
+#include "uvc_ros_driver/calibration.h"
 #include <std_msgs/String.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/fill_image.h>
 
-#include <unistd.h> //debug
+#include "serial_port.h"
+#include "stereo_homography.h"
+#include "fpga_calibration.h"
 
 static const double acc_scale_factor = 16384.0;
 static const double gyr_scale_factor = 131.0;
@@ -157,12 +159,12 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 	msg.right_image.encoding = sensor_msgs::image_encodings::MONO8;
 	msg.right_image.step = frame->width;
 
-	int frame_size = frame->height * frame->width * 2;
+	unsigned frame_size = frame->height * frame->width * 2;
 
 	// read the IMU data
 	int16_t zero = 0;
 
-	for (int i = 0; i < frame->height; i += 1) {
+	for (unsigned i = 0; i < frame->height; i += 1) {
 		double acc_x = double(ShortSwap(static_cast<int16_t *>(frame->data)[int((i + 1) * frame->width - 6 + 0)])) /
 			       (acc_scale_factor / 9.81);
 		double acc_y = double(ShortSwap(static_cast<int16_t *>(frame->data)[int((i + 1) * frame->width - 6 + 1)])) /
@@ -205,7 +207,7 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 			gyr_z_prev = gyr_z;
 		}
 
-		for (int j = 0; j < 6; j++) {
+		for (unsigned j = 0; j < 6; j++) {
 			static_cast<int16_t *>(frame->data)[int((i + 1) * frame->width - 6 + j)] = zero;
 		}
 	}
@@ -218,19 +220,19 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 
 	printf("%lu imu messages\n", msg.imu.size());
 
-	for (int i = 0; i < msg.imu.size(); i++) {
+	for (unsigned i = 0; i < msg.imu.size(); i++) {
 		msg.imu[i].header.stamp = stamp_time - ros::Duration(elapsed * (double(i) / msg.imu.size()));
 	}
 
 	// read the image data
 	if (user_data->hflip) {
-		for (int i = frame_size; i > 0; i -= 2) {
+		for (unsigned i = frame_size; i > 0; i -= 2) {
 			msg.left_image.data.push_back((static_cast<unsigned char *>(frame->data)[i])); // left image
 			msg.right_image.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1])); // right image
 		}
 
 	} else {
-		for (int i = 0; i < frame_size; i += 2) {
+		for (unsigned i = 0; i < frame_size; i += 2) {
 			msg.left_image.data.push_back((static_cast<unsigned char *>(frame->data)[i])); // left image
 			msg.right_image.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1])); // right image
 		}
@@ -239,15 +241,8 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 	user_data->pub.publish(msg);
 }
 
-int main(int argc, char **argv)
-{
-
-	Serial_Port sp = Serial_Port("/dev/serial/by-id/usb-FTDI_FT230X_Basic_UART_DJ00QG09-if00-port0", 115200);
-
-	sp.open_serial();
-
+int set_param(Serial_Port &sp, const char* name, float val) {
 	mavlink_message_t msg;
-
 	char name_buf[16] = {};
 
 	uint8_t local_sys = 1;
@@ -256,33 +251,91 @@ int main(int argc, char **argv)
 	uint8_t target_sys = 99;
 	uint8_t target_comp = 55;
 
-	/* SETCALIB */
-	strncpy(name_buf, "SETCALIB", MAVLINK_MSG_PARAM_VALUE_FIELD_PARAM_ID_LEN);
-	mavlink_msg_param_set_pack(local_sys, local_comp, &msg, target_sys, target_comp, name_buf, 1.0f, MAVLINK_TYPE_FLOAT);
+	// SETCALIB
+	strncpy(name_buf, name, MAVLINK_MSG_PARAM_VALUE_FIELD_PARAM_ID_LEN);
+	mavlink_msg_param_set_pack(local_sys, local_comp, &msg, target_sys, target_comp, name_buf, val, MAVLINK_TYPE_FLOAT);
 	int ret = sp.write_message(msg);
-	printf("ret: %d\n", ret);
+	if (ret <= 0) {
+		printf("ret: %d\n", ret);
+		return ret;
+	}
 
-	strncpy(name_buf, "SETCALIB", MAVLINK_MSG_PARAM_VALUE_FIELD_PARAM_ID_LEN);
-	mavlink_msg_param_set_pack(local_sys, local_comp, &msg, target_sys, target_comp, name_buf, 1.0f, MAVLINK_TYPE_FLOAT);
+	// another time, just so we maximize chances things actually go through
+	strncpy(name_buf, name, MAVLINK_MSG_PARAM_VALUE_FIELD_PARAM_ID_LEN);
+	mavlink_msg_param_set_pack(local_sys, local_comp, &msg, target_sys, target_comp, name_buf, val, MAVLINK_TYPE_FLOAT);
 	ret = sp.write_message(msg);
-	printf("ret: %d\n", ret);
+	if (ret <= 0) {
+		printf("ret: %d\n", ret);
+		return ret;
+	}
 
-	strncpy(name_buf, "SETCALIB", MAVLINK_MSG_PARAM_VALUE_FIELD_PARAM_ID_LEN);
-	mavlink_msg_param_set_pack(local_sys, local_comp, &msg, target_sys, target_comp, name_buf, 1.0f, MAVLINK_TYPE_FLOAT);
-	ret = sp.write_message(msg);
-	printf("ret: %d\n", ret);
+	return 0;
+}
 
-	strncpy(name_buf, "SETCALIB", MAVLINK_MSG_PARAM_VALUE_FIELD_PARAM_ID_LEN);
-	mavlink_msg_param_set_pack(local_sys, local_comp, &msg, target_sys, target_comp, name_buf, 1.0f, MAVLINK_TYPE_FLOAT);
-	ret = sp.write_message(msg);
-	printf("ret: %d\n", ret);
+int set_calibration() {
 
-	strncpy(name_buf, "SETCALIB", MAVLINK_MSG_PARAM_VALUE_FIELD_PARAM_ID_LEN);
-	mavlink_msg_param_set_pack(local_sys, local_comp, &msg, target_sys, target_comp, name_buf, 1.0f, MAVLINK_TYPE_FLOAT);
-	ret = sp.write_message(msg);
-	printf("ret: %d\n", ret);
+
+	Eigen::Matrix3d H0;
+	Eigen::Matrix3d H1;
+	double f_new;
+	Eigen::Vector2d p0_new;
+	Eigen::Vector2d p1_new;
+
+	// CAMERA 1
+	uvc_ros_driver::FPGACalibration cam0;
+	cam0.projection_model_.focal_length_u_ = 700.0f;
+	cam0.projection_model_.focal_length_v_ = 700.0f;
+	cam0.projection_model_.principal_point_u_ = 300.0f;
+	cam0.projection_model_.principal_point_v_ = 200.0f;
+	cam0.projection_model_.k1_ = 0.01f;
+	cam0.projection_model_.k2_ = 0.02f;
+	cam0.projection_model_.r1_ = 0.01f;
+	cam0.projection_model_.r2_ = 0.05f;
+
+	// CAMERA 2
+	uvc_ros_driver::FPGACalibration cam1;
+	cam1.projection_model_.focal_length_u_ = 700.0f;
+	cam1.projection_model_.focal_length_v_ = 700.0f;
+	cam1.projection_model_.principal_point_u_ = 300.0f;
+	cam1.projection_model_.principal_point_v_ = 200.0f;
+	cam1.projection_model_.k1_ = 0.01f;
+	cam1.projection_model_.k2_ = 0.02f;
+	cam1.projection_model_.r1_ = 0.01f;
+	cam1.projection_model_.r2_ = 0.05f;
+
+	StereoHomography h(cam0, cam1);
+	h.getHomography(H0, H1, f_new, p0_new, p1_new);
+
+	Serial_Port sp = Serial_Port("/dev/serial/by-id/usb-FTDI_FT230X_Basic_UART_DJ00QG09-if00-port0", 115200);
+
+	sp.open_serial();
+
+	// Set all parameters here
+	// use H0, H1, f_new, p0_new and p1_new
+	set_param(sp, "SETCALIB", 1.0f);
+
+	// CHANGE THESE!
+	set_param(sp, "H0_a0_b0", H0(0, 0));
+	// ... all nine entries
+	set_param(sp, "H0_a2_b2", H0(2, 2));
+	set_param(sp, "H1_a0_b0", H1(0, 0));
+	// ... all nine entries
+	set_param(sp, "H1_a2_b2", H1(2, 2));
+	set_param(sp, "f_new", f_new);
+	set_param(sp, "p0_u", p0_new(0, 0));
+	set_param(sp, "p0_v", p0_new(0, 1));
+	set_param(sp, "p1_u", p1_new(0, 0));
+	set_param(sp, "p1_v", p1_new(0, 1));
 
 	sp.close_serial();
+
+	return 0;
+}
+
+int main(int argc, char **argv)
+{
+
+	set_calibration();
 
 	ros::init(argc, argv, "uvc_ros_driver");
 	ros::NodeHandle nh("~");  // private nodehandle
