@@ -283,49 +283,107 @@ int set_calibration() {
 
 	// CAMERA 1
 	uvc_ros_driver::FPGACalibration cam0;
-	cam0.projection_model_.focal_length_u_ = 700.0f;
-	cam0.projection_model_.focal_length_v_ = 700.0f;
-	cam0.projection_model_.principal_point_u_ = 300.0f;
-	cam0.projection_model_.principal_point_v_ = 200.0f;
-	cam0.projection_model_.k1_ = 0.01f;
-	cam0.projection_model_.k2_ = 0.02f;
-	cam0.projection_model_.r1_ = 0.01f;
-	cam0.projection_model_.r2_ = 0.05f;
+	cam0.projection_model_.type_ = cam0.projection_model_.PINHOLE;
+	cam0.projection_model_.focal_length_u_ = 722.99;
+	cam0.projection_model_.focal_length_v_ = 723.57f;
+	cam0.projection_model_.principal_point_u_ = 287.72f;
+	cam0.projection_model_.principal_point_v_ = 250.47f;
+	cam0.projection_model_.k1_ = 0.2043f;
+	cam0.projection_model_.k2_ = -0.5531f;
+	cam0.projection_model_.r1_ = 0.00f;
+	cam0.projection_model_.r2_ = 0.00f;
+	cam0.projection_model_.R_[0] = 1.0f;
+	cam0.projection_model_.R_[1] = 0.0f;
+	cam0.projection_model_.R_[2] = 0.0f;
+	cam0.projection_model_.R_[3] = 0.0f;
+	cam0.projection_model_.R_[4] = 1.0f;
+	cam0.projection_model_.R_[5] = 0.0f;
+	cam0.projection_model_.R_[6] = 0.0f;
+	cam0.projection_model_.R_[7] = 0.0f;
+	cam0.projection_model_.R_[8] = 1.0f;
+	cam0.projection_model_.t_[0] = 0.0f;
+	cam0.projection_model_.t_[1] = 0.0f;
+	cam0.projection_model_.t_[2] = 0.0f;
 
 	// CAMERA 2
 	uvc_ros_driver::FPGACalibration cam1;
-	cam1.projection_model_.focal_length_u_ = 700.0f;
-	cam1.projection_model_.focal_length_v_ = 700.0f;
-	cam1.projection_model_.principal_point_u_ = 300.0f;
-	cam1.projection_model_.principal_point_v_ = 200.0f;
-	cam1.projection_model_.k1_ = 0.01f;
-	cam1.projection_model_.k2_ = 0.02f;
-	cam1.projection_model_.r1_ = 0.01f;
-	cam1.projection_model_.r2_ = 0.05f;
+	cam1.projection_model_.type_ = cam1.projection_model_.PINHOLE;
+	cam1.projection_model_.focal_length_u_ = 711.60f;
+	cam1.projection_model_.focal_length_v_ = 711.03f;
+	cam1.projection_model_.principal_point_u_ = 339.87f;
+	cam1.projection_model_.principal_point_v_ = 207.27f;
+	cam1.projection_model_.k1_ = 0.2007f;
+	cam1.projection_model_.k2_ = -0.4792f;
+	cam1.projection_model_.r1_ = 0.00f;
+	cam1.projection_model_.r2_ = 0.00f;
+	cam1.projection_model_.R_[0] = 0.9999f;
+	cam1.projection_model_.R_[1] = 0.0038f;
+	cam1.projection_model_.R_[2] = -0.0122f;
+	cam1.projection_model_.R_[3] = -0.0038f;
+	cam1.projection_model_.R_[4] = 0.9999f;
+	cam1.projection_model_.R_[5] = 0.0052f;
+	cam1.projection_model_.R_[6] = 0.0122f;
+	cam1.projection_model_.R_[7] = -0.0052f;
+	cam1.projection_model_.R_[8] = 0.9999f;
+	cam1.projection_model_.t_[0] = -0.0588f*1000.0f;
+	cam1.projection_model_.t_[1] = 0.0011f*1000.0f;
+	cam1.projection_model_.t_[2] = 0.0003f*1000.0f;
 
 	StereoHomography h(cam0, cam1);
 	h.getHomography(H0, H1, f_new, p0_new, p1_new);
 
-	Serial_Port sp = Serial_Port("/dev/serial/by-id/usb-FTDI_FT230X_Basic_UART_DJ00QG09-if00-port0", 115200);
+	Serial_Port sp = Serial_Port("/dev/serial/by-id/usb-FTDI_FT230X_Basic_UART_DJ00QLMG-if00-port0", 115200);
 
 	sp.open_serial();
 
 	// Set all parameters here
 	// use H0, H1, f_new, p0_new and p1_new
-	set_param(sp, "SETCALIB", 1.0f);
+	set_param(sp, "PARAM_CCX_CAM1", p0_new[0]);
+	set_param(sp, "PARAM_CCY_CAM1", p0_new[1]);
+	set_param(sp, "PARAM_FCX_CAM1", f_new);
+	set_param(sp, "PARAM_FCY_CAM1", f_new);
+	set_param(sp, "PARAM_KC1_CAM1", cam0.projection_model_.k1_);
+	set_param(sp, "PARAM_KC2_CAM1", cam0.projection_model_.k2_);
+	set_param(sp, "PARAM_H11_CAM1", H0(0, 0));
+	set_param(sp, "PARAM_H12_CAM1", H0(0, 1));
+	set_param(sp, "PARAM_H13_CAM1", H0(0, 2));
+	set_param(sp, "PARAM_H21_CAM1", H0(1, 0));
+	set_param(sp, "PARAM_H22_CAM1", H0(1, 1));
+	set_param(sp, "PARAM_H23_CAM1", H0(1, 2));
+	set_param(sp, "PARAM_H31_CAM1", H0(2, 0));
+	set_param(sp, "PARAM_H32_CAM1", H0(2, 1));
+	set_param(sp, "PARAM_H33_CAM1", H0(2, 2));
 
-	// CHANGE THESE!
-	set_param(sp, "H0_a0_b0", H0(0, 0));
-	// ... all nine entries
-	set_param(sp, "H0_a2_b2", H0(2, 2));
-	set_param(sp, "H1_a0_b0", H1(0, 0));
-	// ... all nine entries
-	set_param(sp, "H1_a2_b2", H1(2, 2));
-	set_param(sp, "f_new", f_new);
-	set_param(sp, "p0_u", p0_new(0, 0));
-	set_param(sp, "p0_v", p0_new(0, 1));
-	set_param(sp, "p1_u", p1_new(0, 0));
-	set_param(sp, "p1_v", p1_new(0, 1));
+	set_param(sp, "PARAM_CCX_CAM2", p1_new[0]);
+	set_param(sp, "PARAM_CCY_CAM2", p1_new[1]);
+	set_param(sp, "PARAM_FCX_CAM2", f_new);
+	set_param(sp, "PARAM_FCY_CAM2", f_new);
+	set_param(sp, "PARAM_KC1_CAM2", cam1.projection_model_.k1_);
+	set_param(sp, "PARAM_KC2_CAM2", cam1.projection_model_.k2_);
+	set_param(sp, "PARAM_H11_CAM2", H1(0, 0));
+	set_param(sp, "PARAM_H12_CAM2", H1(0, 1));
+	set_param(sp, "PARAM_H13_CAM2", H1(0, 2));
+	set_param(sp, "PARAM_H21_CAM2", H1(1, 0));
+	set_param(sp, "PARAM_H22_CAM2", H1(1, 1));
+	set_param(sp, "PARAM_H23_CAM2", H1(1, 2));
+	set_param(sp, "PARAM_H31_CAM2", H1(2, 0));
+	set_param(sp, "PARAM_H32_CAM2", H1(2, 1));
+	set_param(sp, "PARAM_H33_CAM2", H1(2, 2));
+
+	set_param(sp, "STEREO_P1", 16.0f);
+	set_param(sp, "STEREO_P2", 250.0f);
+	set_param(sp, "STEREO_LRCHK", 3.0f);
+	set_param(sp, "STEREO_THOLD", 140.0f);
+	set_param(sp, "STEREO_MASK", 0.0f);
+
+
+	//set_param(sp, "RESETCALIB", 1.0f);
+	set_param(sp, "SETCALIB", 1.0f);
+	set_param(sp, "STEREO_ENABLE", 1.0f);
+
+std::cout<<"H0: "<<H0<<"\n";
+std::cout<<"H1: "<<H1<<"\n";
+ROS_INFO("fnew %f",f_new);
 
 	sp.close_serial();
 
@@ -406,10 +464,10 @@ int main(int argc, char **argv)
 
 			} else {
 
-				if (!repeatedStart(devh, ctrl)) {
+				/*if (!repeatedStart(devh, ctrl)) {
 					ROS_ERROR("Failed to get stream from the camera. Try powercycling the device");
 					return -1;
-				}
+				}*/
 
 				/* Start the video stream. The library will call user function cb:
 				 *   cb(frame, (void*) vio_sensor_pub)

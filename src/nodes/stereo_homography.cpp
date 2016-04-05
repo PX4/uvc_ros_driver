@@ -70,7 +70,7 @@ Eigen::Vector3d normalizePixel(const Eigen::Vector2d& x_kk, const double f[2], c
  */
 StereoHomography::StereoHomography(const uvc_ros_driver::FPGACalibration& calib_cam0,
                                    const uvc_ros_driver::FPGACalibration& calib_cam1)
-: image_width_(752),
+: image_width_(640),
   image_height_(480) {
   if (calib_cam0.projection_model_.type_ == uvc_ros_driver::CameraProjectionModel::ProjectionModelTypes::PINHOLE){
     const uvc_ros_driver::CameraProjectionModel* cam0_projection_model = calib_cam0.getProjectionModel();
@@ -84,10 +84,30 @@ StereoHomography::StereoHomography(const uvc_ros_driver::FPGACalibration& calib_
     f1_[1] = cam1_projection_model->focal_length_v_;
     p1_[0] = cam1_projection_model->principal_point_u_;
     p1_[1] = cam1_projection_model->principal_point_v_;
+    d0_[0] = cam0_projection_model->k1_;
+    d0_[1] = cam0_projection_model->k2_;
+    d0_[2] = cam0_projection_model->r1_;
+    d0_[3] = cam0_projection_model->r2_;
+    d1_[0] = cam1_projection_model->k1_;
+    d1_[1] = cam1_projection_model->k2_;
+    d1_[2] = cam1_projection_model->r1_;
+    d1_[3] = cam1_projection_model->r2_;
+
+  for (int i = 0; i < 3 ; ++i) {
+	t0_[i] = cam0_projection_model->t_[i];
+	t1_[i] = cam1_projection_model->t_[i];
+     }
+  for (int i = 0; i < 9 ; ++i) {
+	r0_[i] = cam0_projection_model->R_[i];
+	r1_[i] = cam1_projection_model->R_[i];
+     }
+
   }
   else {
     printf("current projection model not supported\n");
   }
+
+
 }
 
 //Computes homography for stereo rectification
@@ -120,7 +140,7 @@ void StereoHomography::getHomography(Eigen::Matrix3d& H0, Eigen::Matrix3d& H1, d
 
   Eigen::Matrix3d r_1(Eigen::AngleAxisd(om.norm() / (-2.0), om.normalized()));
 
-  double zoom = 50.0;
+  double zoom = 00.0;
 
   if (om.norm() == 0) {
       r_1.setIdentity();
@@ -155,6 +175,7 @@ void StereoHomography::getHomography(Eigen::Matrix3d& H0, Eigen::Matrix3d& H1, d
   //Global rotations to be applied to both views
   Eigen::Matrix3d R_1 = R2 * r_0;
   Eigen::Matrix3d R_0 = R2 * r_1;
+
 
   //The resulting rigid motion between the two cameras after image rotations (substitutes of om, R and T)
   Eigen::Matrix3d R_new;
