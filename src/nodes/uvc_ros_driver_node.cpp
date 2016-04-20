@@ -292,16 +292,26 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 		}
 	}*/
 	// read the image data
-	if (cam_id==0) { //select_cam = 1 +2
+
+	if (cam_id==0) { //select_cam = 0 +1
 		for (unsigned i = 0; i < frame_size; i += 2) {
 			msg.left_image.data.push_back((static_cast<unsigned char *>(frame->data)[i])); // left image
 			msg.right_image.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1])); // right image
 		}
+		user_data->pub.publish(msg);
+
+		msg.left_image.data.clear();
+		msg.right_image.data.clear();
+		msg.left_image2.data.clear();
+		msg.right_image2.data.clear();
+		msg.left_image3.data.clear();
+		msg.right_image3.data.clear();
+		msg.left_image4.data.clear();
+		msg.right_image4.data.clear();
 		msg.imu.clear();
+	}
 
-	} 
-
-	if (cam_id==1) { //select_cam = 3 +4
+	if (cam_id==1) { //select_cam = 2 +3
 		for (unsigned i = 0; i < frame_size; i += 2) {
 			msg.left_image2.data.push_back((static_cast<unsigned char *>(frame->data)[i])); // left image
 			msg.right_image2.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1])); // right image
@@ -324,18 +334,10 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 			msg.left_image4.data.push_back((static_cast<unsigned char *>(frame->data)[i])); // left image
 			msg.right_image4.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1])); // right image
 		}
-		user_data->pub.publish(msg);
-
-		msg.left_image.data.clear();
-		msg.right_image.data.clear();
-		msg.left_image2.data.clear();
-		msg.right_image2.data.clear();
-		msg.left_image3.data.clear();
-		msg.right_image3.data.clear();
-		msg.left_image4.data.clear();
-		msg.right_image4.data.clear();
 		msg.imu.clear();
-	}
+
+	} 
+
 
 	//user_data->pub.publish(msg);
 }
@@ -736,11 +738,29 @@ int set_calibration() {
 	set_param(sp, "PARAM_H32_CAM8", H7(2, 1));
 	set_param(sp, "PARAM_H33_CAM8", H7(2, 2));
 
-	set_param(sp, "STEREO_P1", 16.0f);
-	set_param(sp, "STEREO_P2", 250.0f);
-	set_param(sp, "STEREO_LRCHK", 4.0f);
-	set_param(sp, "STEREO_THOLD", 100.0f);
-	set_param(sp, "STEREO_MASK", 0.0f);
+	set_param(sp, "STEREO_P1_CAM1", 16.0f);
+	set_param(sp, "STEREO_P2_CAM1", 250.0f);
+	set_param(sp, "STEREO_LR_CAM1", 4.0f);
+	set_param(sp, "STEREO_TH_CAM1", 100.0f);
+
+	set_param(sp, "STEREO_P1_CAM3", 16.0f);
+	set_param(sp, "STEREO_P2_CAM3", 250.0f);
+	set_param(sp, "STEREO_LR_CAM3", 4.0f);
+	set_param(sp, "STEREO_TH_CAM3", 100.0f);
+
+	set_param(sp, "STEREO_P1_CAM5", 16.0f);
+	set_param(sp, "STEREO_P2_CAM5", 250.0f);
+	set_param(sp, "STEREO_LR_CAM5", 4.0f);
+	set_param(sp, "STEREO_TH_CAM5", 100.0f);
+
+	set_param(sp, "STEREO_P1_CAM7", 16.0f);
+	set_param(sp, "STEREO_P2_CAM7", 250.0f);
+	set_param(sp, "STEREO_LR_CAM7", 4.0f);
+	set_param(sp, "STEREO_TH_CAM7", 100.0f);
+
+	set_param(sp, "CAMERA_H_FLIP", 0.0f);
+	// last 4 bits activate the 4 camera pairs 0x01 = pair 1 only, 0x0F all 4 pairs
+	set_param(sp, "CAMERA_ENABLE", 15.0f);
 
 	//set_param(sp, "RESETCALIB", 1.0f);
 	set_param(sp, "SETCALIB", 1.0f);
