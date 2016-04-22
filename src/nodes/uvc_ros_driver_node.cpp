@@ -64,11 +64,16 @@ static const double deg2rad = 2 * M_PI / 360.0;
 //static double acc_x_prev, acc_y_prev, acc_z_prev, gyr_x_prev, gyr_y_prev, gyr_z_prev;
 static uint16_t count_prev;
 static ros::Time last_time;
-ait_ros_messages::VioSensorMsg msg;
+ait_ros_messages::VioSensorMsg msg_vio;
+sensor_msgs::Imu msg_imu;
 
 // struct holding all data needed in the callback
 struct UserData {
-	ros::Publisher pub;
+	ros::Publisher image_publisher_1;
+	ros::Publisher image_publisher_2;
+	ros::Publisher image_publisher_3;
+	ros::Publisher image_publisher_4;
+	ros::Publisher imu_publisher;
 	bool hflip;
 	bool serialconfig;
 };
@@ -148,51 +153,20 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 
 	//ait_ros_messages::VioSensorMsg msg;
 
-	msg.header.stamp = ros::Time::now();
+	msg_vio.header.stamp = ros::Time::now();
 
-	msg.left_image.header.stamp = msg.header.stamp;
-	msg.right_image.header.stamp = msg.header.stamp;
+	msg_vio.left_image.header.stamp = msg_vio.header.stamp;
+	msg_vio.right_image.header.stamp = msg_vio.header.stamp;
 
-	msg.left_image.height = frame->height;
-	msg.left_image.width = frame->width;
-	msg.left_image.encoding = sensor_msgs::image_encodings::MONO8;
-	msg.left_image.step = frame->width;
+	msg_vio.left_image.height = frame->height;
+	msg_vio.left_image.width = frame->width;
+	msg_vio.left_image.encoding = sensor_msgs::image_encodings::MONO8;
+	msg_vio.left_image.step = frame->width;
 
-	msg.right_image.height = frame->height;
-	msg.right_image.width = frame->width;
-	msg.right_image.encoding = sensor_msgs::image_encodings::MONO8;
-	msg.right_image.step = frame->width;
-
-
-	msg.left_image2.height = frame->height;
-	msg.left_image2.width = frame->width;
-	msg.left_image2.encoding = sensor_msgs::image_encodings::MONO8;
-	msg.left_image2.step = frame->width;
-
-	msg.right_image2.height = frame->height;
-	msg.right_image2.width = frame->width;
-	msg.right_image2.encoding = sensor_msgs::image_encodings::MONO8;
-	msg.right_image2.step = frame->width;
-
-	msg.left_image3.height = frame->height;
-	msg.left_image3.width = frame->width;
-	msg.left_image3.encoding = sensor_msgs::image_encodings::MONO8;
-	msg.left_image3.step = frame->width;
-
-	msg.right_image3.height = frame->height;
-	msg.right_image3.width = frame->width;
-	msg.right_image3.encoding = sensor_msgs::image_encodings::MONO8;
-	msg.right_image3.step = frame->width;
-
-	msg.left_image4.height = frame->height;
-	msg.left_image4.width = frame->width;
-	msg.left_image4.encoding = sensor_msgs::image_encodings::MONO8;
-	msg.left_image4.step = frame->width;
-
-	msg.right_image4.height = frame->height;
-	msg.right_image4.width = frame->width;
-	msg.right_image4.encoding = sensor_msgs::image_encodings::MONO8;
-	msg.right_image4.step = frame->width;
+	msg_vio.right_image.height = frame->height;
+	msg_vio.right_image.width = frame->width;
+	msg_vio.right_image.encoding = sensor_msgs::image_encodings::MONO8;
+	msg_vio.right_image.step = frame->width;
 
 	unsigned frame_size = frame->height * frame->width * 2;
 
@@ -229,26 +203,29 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 		//if (!(acc_x == acc_x_prev && acc_y == acc_y_prev && acc_z == acc_z_prev && gyr_x == gyr_x_prev && gyr_y == gyr_y_prev
 		//      && gyr_z == gyr_z_prev)) {
 		if(!(count == count_prev)){
-//            printf("\nacc x %+02.4f ", acc_x);
-//            printf("acc y %+04.4f ", acc_y);
-//            printf("acc z %+04.4f ", acc_z);
-//            printf("gyr x %+04.4f ", gyr_x);
-//            printf("gyr y %+04.4f ", gyr_y);
-//            printf("gyr z %+04.4f\n", gyr_z);
- //             printf("count %d \n", count);
- //             printf("temp %d \n", temp);
-//printf("cam_id %d \n", cam_id);
+			//  printf("\nacc x %+02.4f ", acc_x);
+			//  printf("acc y %+04.4f ", acc_y);
+			//  printf("acc z %+04.4f ", acc_z);
+			//  printf("gyr x %+04.4f ", gyr_x);
+			//  printf("gyr y %+04.4f ", gyr_y);
+			//  printf("gyr z %+04.4f\n", gyr_z);
+			//  printf("count %d \n", count);
+			//  printf("temp %d \n", temp);
+			//	printf("cam_id %d \n", cam_id);
 
-			sensor_msgs::Imu imu_msg;
-			imu_msg.linear_acceleration.x = -acc_y;
-			imu_msg.linear_acceleration.y = -acc_x;
-			imu_msg.linear_acceleration.z = -acc_z;
+			msg_imu.linear_acceleration.x = -acc_y;
+			msg_imu.linear_acceleration.y = -acc_x;
+			msg_imu.linear_acceleration.z = -acc_z;
 
-			imu_msg.angular_velocity.x = -gyr_y;
-			imu_msg.angular_velocity.y = -gyr_x;
-			imu_msg.angular_velocity.z = -gyr_z;
+			msg_imu.angular_velocity.x = -gyr_y;
+			msg_imu.angular_velocity.y = -gyr_x;
+			msg_imu.angular_velocity.z = -gyr_z;
 
-			msg.imu.push_back(imu_msg);
+			msg_vio.imu.push_back(msg_imu);
+
+			msg_imu.header.stamp = last_time + (msg_vio.header.stamp - last_time)*(double(i)/msg_vio.left_image.height);
+
+			user_data->imu_publisher.publish(msg_imu);
 
 			count_prev = count;
 			//acc_x_prev = acc_x;
@@ -265,17 +242,17 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 	}
 
 	// linearly interpolate the time stamps of the imu messages
-	ros::Duration elapsed = msg.header.stamp - last_time;
-	last_time = msg.header.stamp;
+	ros::Duration elapsed = msg_vio.header.stamp - last_time;
+	last_time = msg_vio.header.stamp;
 
-	ros::Time stamp_time = msg.header.stamp;
+	ros::Time stamp_time = msg_vio.header.stamp;
 
 	printf("time elapsed: %f   ", elapsed.toSec());
 	printf("framerate: %f   ", 1.0f/elapsed.toSec());
-	printf("%lu imu messages\n", msg.imu.size());
+	printf("%lu imu messages\n", msg_vio.imu.size());
 
-	for (unsigned i = 0; i < msg.imu.size(); i++) {
-		msg.imu[i].header.stamp = stamp_time - elapsed +ros::Duration(elapsed * (double(i) / msg.imu.size()));
+	for (unsigned i = 0; i < msg_vio.imu.size(); i++) {
+		msg_vio.imu[i].header.stamp = stamp_time - elapsed +ros::Duration(elapsed * (double(i) / msg_vio.imu.size()));
 	}
 
 	// read the image data
@@ -295,51 +272,55 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 
 	if (cam_id==0) { //select_cam = 0 +1
 		for (unsigned i = 0; i < frame_size; i += 2) {
-			msg.left_image.data.push_back((static_cast<unsigned char *>(frame->data)[i])); // left image
-			msg.right_image.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1])); // right image
+			msg_vio.left_image.data.push_back((static_cast<unsigned char *>(frame->data)[i])); // left image
+			msg_vio.right_image.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1])); // right image
 		}
-		user_data->pub.publish(msg);
+		user_data->image_publisher_1.publish(msg_vio);
 
-		msg.left_image.data.clear();
-		msg.right_image.data.clear();
-		msg.left_image2.data.clear();
-		msg.right_image2.data.clear();
-		msg.left_image3.data.clear();
-		msg.right_image3.data.clear();
-		msg.left_image4.data.clear();
-		msg.right_image4.data.clear();
-		msg.imu.clear();
+		msg_vio.left_image.data.clear();
+		msg_vio.right_image.data.clear();
+		msg_vio.imu.clear();
+		printf("test camera id 0   ");
 	}
 
 	if (cam_id==1) { //select_cam = 2 +3
 		for (unsigned i = 0; i < frame_size; i += 2) {
-			msg.left_image2.data.push_back((static_cast<unsigned char *>(frame->data)[i])); // left image
-			msg.right_image2.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1])); // right image
+			msg_vio.left_image.data.push_back((static_cast<unsigned char *>(frame->data)[i])); // left image
+			msg_vio.right_image.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1])); // right image
 		}
-		msg.imu.clear();
+		user_data->image_publisher_2.publish(msg_vio);
 
-	} 
+		msg_vio.left_image.data.clear();
+		msg_vio.right_image.data.clear();
+		msg_vio.imu.clear();
+		printf("test camera id 1   ");
+	}
 
 	if (cam_id==2) { //select_cam = 4 +5
 		for (unsigned i = 0; i < frame_size; i += 2) {
-			msg.left_image3.data.push_back((static_cast<unsigned char *>(frame->data)[i])); // left image
-			msg.right_image3.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1])); // right image
+			msg_vio.left_image.data.push_back((static_cast<unsigned char *>(frame->data)[i])); // left image
+			msg_vio.right_image.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1])); // right image
 		}
-		msg.imu.clear();
+		user_data->image_publisher_3.publish(msg_vio);
 
-	} 
+		msg_vio.left_image.data.clear();
+		msg_vio.right_image.data.clear();
+		msg_vio.imu.clear();
+		printf("test camera id 2   ");
+	}
 
 	if (cam_id==3) { //select_cam = 6 +7
 		for (unsigned i = 0; i < frame_size; i += 2) {
-			msg.left_image4.data.push_back((static_cast<unsigned char *>(frame->data)[i])); // left image
-			msg.right_image4.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1])); // right image
+			msg_vio.left_image.data.push_back((static_cast<unsigned char *>(frame->data)[i])); // left image
+			msg_vio.right_image.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1])); // right image
 		}
-		msg.imu.clear();
+		user_data->image_publisher_4.publish(msg_vio);
 
-	} 
-
-
-	//user_data->pub.publish(msg);
+		msg_vio.left_image.data.clear();
+		msg_vio.right_image.data.clear();
+		msg_vio.imu.clear();
+		printf("test camera id 3   ");
+	}
 }
 
 int set_param(Serial_Port &sp, const char* name, float val) {
@@ -758,13 +739,13 @@ int set_calibration() {
 	set_param(sp, "STEREO_LR_CAM7", 4.0f);
 	set_param(sp, "STEREO_TH_CAM7", 100.0f);
 
-	set_param(sp, "CAMERA_H_FLIP", 0.0f);
+	set_param(sp, "CAMERA_H_FLIP", 1.0f);
 	// last 4 bits activate the 4 camera pairs 0x01 = pair 1 only, 0x0F all 4 pairs
 	set_param(sp, "CAMERA_ENABLE", 15.0f);
 
-	//set_param(sp, "RESETCALIB", 1.0f);
-	set_param(sp, "SETCALIB", 1.0f);
-	set_param(sp, "STEREO_ENABLE", 1.0f);
+	set_param(sp, "RESETCALIB", 1.0f);
+	set_param(sp, "SETCALIB", 0.0f);
+	set_param(sp, "STEREO_ENABLE", 0.0f);
 
 	set_param(sp, "RESETMT9V034", 1.0f);
 
@@ -787,7 +768,12 @@ int main(int argc, char **argv)
 	last_time = ros::Time::now();
 
 	UserData user_data;
-	user_data.pub = nh.advertise<ait_ros_messages::VioSensorMsg>("/vio_sensor", 1);
+	user_data.image_publisher_1 = nh.advertise<ait_ros_messages::VioSensorMsg>("/vio_sensor_1", 100);
+	user_data.image_publisher_2 = nh.advertise<ait_ros_messages::VioSensorMsg>("/vio_sensor_2", 100);
+	user_data.image_publisher_3 = nh.advertise<ait_ros_messages::VioSensorMsg>("/vio_sensor_3", 100);
+	user_data.image_publisher_4 = nh.advertise<ait_ros_messages::VioSensorMsg>("/vio_sensor_4", 100);
+
+	user_data.imu_publisher = nh.advertise<sensor_msgs::Imu>("/vio_imu", 0);
 
 	nh.param<bool>("hflip", user_data.hflip, false);
 	nh.param<bool>("serialconfig", user_data.serialconfig, false);
