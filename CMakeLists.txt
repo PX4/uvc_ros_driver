@@ -6,6 +6,7 @@ project(uvc_ros_driver)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  roslib
   rospy
   sensor_msgs
   std_msgs
@@ -106,10 +107,11 @@ generate_messages(
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -Wall -std=c++0x -D__STRICT_ANSI__")
 
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES uvc_ros_driver
-#  CATKIN_DEPENDS libuvc roscpp rospy sensor_msgs std_msgs
+  INCLUDE_DIRS include
+  LIBRARIES uvc_ros_driver
+  CATKIN_DEPENDS roscpp roslib
 #  DEPENDS system_lib
+  DEPENDS yaml-cpp
 )
 
 ###########
@@ -140,9 +142,9 @@ include_directories(
 ## Declare a C++ executable
 add_executable(uvc_ros_driver_node
 	src/nodes/uvc_ros_driver_node.cpp
-	src/nodes/serial_port.cpp
-  src/nodes/stereo_homography.cpp
-  src/nodes/fpga_calibration.cpp
+	src/serial_port.cpp
+  src/stereo_homography.cpp
+  src/fpga_calibration.cpp
 )
 
 ## Add cmake target dependencies of the executable
@@ -151,6 +153,7 @@ add_executable(uvc_ros_driver_node
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(uvc_ros_driver_node
+  yaml-cpp
   ${catkin_LIBRARIES}
   /usr/local/lib/libuvc.so #TODO link by usign find_package
 )
