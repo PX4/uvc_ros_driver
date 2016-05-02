@@ -34,7 +34,7 @@
  * uvc_ros_driver_node.cpp
  *
  *  Created on: Mar 11, 2016
- *      Author: nicolas
+ *      Author: nicolas, christoph
  *
  *  The code below is based on the example provided at https://int80k.com/libuvc/doc/
  */
@@ -45,6 +45,7 @@
 
 #include "libuvc/libuvc.h"
 #include <ros/ros.h>
+#include <ros/package.h>
 
 #include "ait_ros_messages/VioSensorMsg.h"
 #include "uvc_ros_driver/calibration.h"
@@ -56,16 +57,25 @@
 #include "serial_port.h"
 #include "stereo_homography.h"
 #include "fpga_calibration.h"
+#include "calib_yaml_interface.h"
 
 static const double acc_scale_factor = 16384.0;
 static const double gyr_scale_factor = 131.0;
 static const double deg2rad = 2 * M_PI / 360.0;
+
+//declare helper function
+CameraParameters loadCustomCameraCalibration(const std::string calib_path);
+CameraParameters stereoPair0_Params = {};
+CameraParameters stereoPair1_Params = {};
+CameraParameters stereoPair2_Params = {};
+CameraParameters stereoPair3_Params = {};
 
 //static double acc_x_prev, acc_y_prev, acc_z_prev, gyr_x_prev, gyr_y_prev, gyr_z_prev;
 static uint16_t count_prev;
 static ros::Time last_time;
 ait_ros_messages::VioSensorMsg msg_vio;
 sensor_msgs::Imu msg_imu;
+int test_counter = 0;
 
 // struct holding all data needed in the callback
 struct UserData {
@@ -269,13 +279,15 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 		}
 	}*/
 	// read the image data
-
+	test_counter++;
 	if (cam_id==0) { //select_cam = 0 +1
 		for (unsigned i = 0; i < frame_size; i += 2) {
 			msg_vio.left_image.data.push_back((static_cast<unsigned char *>(frame->data)[i])); // left image
 			msg_vio.right_image.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1])); // right image
 		}
-		user_data->image_publisher_1.publish(msg_vio);
+		if (test_counter % 3 == 0) {
+			user_data->image_publisher_1.publish(msg_vio);
+		}
 
 		msg_vio.left_image.data.clear();
 		msg_vio.right_image.data.clear();
@@ -288,7 +300,8 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 			msg_vio.left_image.data.push_back((static_cast<unsigned char *>(frame->data)[i])); // left image
 			msg_vio.right_image.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1])); // right image
 		}
-		user_data->image_publisher_2.publish(msg_vio);
+		if (test_counter % 3 == 0)
+			user_data->image_publisher_2.publish(msg_vio);
 
 		msg_vio.left_image.data.clear();
 		msg_vio.right_image.data.clear();
@@ -301,7 +314,8 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 			msg_vio.left_image.data.push_back((static_cast<unsigned char *>(frame->data)[i])); // left image
 			msg_vio.right_image.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1])); // right image
 		}
-		user_data->image_publisher_3.publish(msg_vio);
+		if (test_counter % 3 == 0)
+			user_data->image_publisher_3.publish(msg_vio);
 
 		msg_vio.left_image.data.clear();
 		msg_vio.right_image.data.clear();
@@ -314,7 +328,8 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 			msg_vio.left_image.data.push_back((static_cast<unsigned char *>(frame->data)[i])); // left image
 			msg_vio.right_image.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1])); // right image
 		}
-		user_data->image_publisher_4.publish(msg_vio);
+		if (test_counter % 3 == 0)
+			user_data->image_publisher_4.publish(msg_vio);
 
 		msg_vio.left_image.data.clear();
 		msg_vio.right_image.data.clear();
@@ -365,14 +380,14 @@ int set_calibration() {
 	// CAMERA 0
 	uvc_ros_driver::FPGACalibration cam0;
 	cam0.projection_model_.type_ = cam0.projection_model_.PINHOLE;
-	cam0.projection_model_.focal_length_u_ = 717.40f;
-	cam0.projection_model_.focal_length_v_ = 717.49f;
-	cam0.projection_model_.principal_point_u_ = 327.93f;
-	cam0.projection_model_.principal_point_v_ = 270.17f;
-	cam0.projection_model_.k1_ = 0.1783f;
-	cam0.projection_model_.k2_ = -0.3191f;
-	cam0.projection_model_.r1_ = 0.00f;
-	cam0.projection_model_.r2_ = 0.00f;
+	cam0.projection_model_.focal_length_u_ = stereoPair0_Params.cam0_FocalLength[0];
+	cam0.projection_model_.focal_length_v_ = stereoPair0_Params.cam0_FocalLength[1];
+	cam0.projection_model_.principal_point_u_ = stereoPair0_Params.cam0_PrincipalPoint[0];
+	cam0.projection_model_.principal_point_v_ = stereoPair0_Params.cam0_PrincipalPoint[1];
+	cam0.projection_model_.k1_ = stereoPair0_Params.cam0_DistortionCoeffs[0];
+	cam0.projection_model_.k2_ = stereoPair0_Params.cam0_DistortionCoeffs[1];
+	cam0.projection_model_.r1_ = stereoPair0_Params.cam0_DistortionCoeffs[2];
+	cam0.projection_model_.r2_ = stereoPair0_Params.cam0_DistortionCoeffs[3];
 	cam0.projection_model_.R_[0] = 1.0f;
 	cam0.projection_model_.R_[1] = 0.0f;
 	cam0.projection_model_.R_[2] = 0.0f;
@@ -385,30 +400,30 @@ int set_calibration() {
 	cam0.projection_model_.t_[0] = 0.0f;
 	cam0.projection_model_.t_[1] = 0.0f;
 	cam0.projection_model_.t_[2] = 0.0f;
-
-	// CAMERA 1
+	printf("test focal length = %2.4f\n", stereoPair0_Params.cam0_FocalLength[0]);
+	//CAMERA 1
 	uvc_ros_driver::FPGACalibration cam1;
 	cam1.projection_model_.type_ = cam1.projection_model_.PINHOLE;
-	cam1.projection_model_.focal_length_u_ = 714.46f;
-	cam1.projection_model_.focal_length_v_ = 714.34f;
-	cam1.projection_model_.principal_point_u_ = 359.40f;
-	cam1.projection_model_.principal_point_v_ = 242.25f;
-	cam1.projection_model_.k1_ = 0.2031f;
-	cam1.projection_model_.k2_ = -0.5438f;
-	cam1.projection_model_.r1_ = 0.00f;
-	cam1.projection_model_.r2_ = 0.00f;
-	cam1.projection_model_.R_[0] = 0.9999f;
-	cam1.projection_model_.R_[1] = -0.0122f;
-	cam1.projection_model_.R_[2] = 0.0009f;
-	cam1.projection_model_.R_[3] = 0.0122f;
-	cam1.projection_model_.R_[4] = 0.9999f;
-	cam1.projection_model_.R_[5] = -0.0008f;
-	cam1.projection_model_.R_[6] = -0.0009f;
-	cam1.projection_model_.R_[7] = 0.0008f;
-	cam1.projection_model_.R_[8] = 0.9999f;
-	cam1.projection_model_.t_[0] = -0.0685f;
-	cam1.projection_model_.t_[1] = 0.0002f;
-	cam1.projection_model_.t_[2] = 0.0004f;
+	cam1.projection_model_.focal_length_u_ = stereoPair0_Params.cam1_FocalLength[0];
+	cam1.projection_model_.focal_length_v_ = stereoPair0_Params.cam1_FocalLength[1];
+	cam1.projection_model_.principal_point_u_ = stereoPair0_Params.cam1_PrincipalPoint[0];
+	cam1.projection_model_.principal_point_v_ = stereoPair0_Params.cam1_PrincipalPoint[1];
+	cam1.projection_model_.k1_ = stereoPair0_Params.cam1_DistortionCoeffs[0];
+	cam1.projection_model_.k2_ = stereoPair0_Params.cam1_DistortionCoeffs[1];
+	cam1.projection_model_.r1_ = stereoPair0_Params.cam1_DistortionCoeffs[2];
+	cam1.projection_model_.r2_ = stereoPair0_Params.cam1_DistortionCoeffs[3];
+	cam1.projection_model_.R_[0] = stereoPair0_Params.CameraTransformationMatrix[0][0];
+	cam1.projection_model_.R_[1] = stereoPair0_Params.CameraTransformationMatrix[0][1];
+	cam1.projection_model_.R_[2] = stereoPair0_Params.CameraTransformationMatrix[0][2];
+	cam1.projection_model_.R_[3] = stereoPair0_Params.CameraTransformationMatrix[1][0];
+	cam1.projection_model_.R_[4] = stereoPair0_Params.CameraTransformationMatrix[1][1];
+	cam1.projection_model_.R_[5] = stereoPair0_Params.CameraTransformationMatrix[1][2];
+	cam1.projection_model_.R_[6] = stereoPair0_Params.CameraTransformationMatrix[2][0];
+	cam1.projection_model_.R_[7] = stereoPair0_Params.CameraTransformationMatrix[2][1];
+	cam1.projection_model_.R_[8] = stereoPair0_Params.CameraTransformationMatrix[2][2];
+	cam1.projection_model_.t_[0] = stereoPair0_Params.CameraTransformationMatrix[0][3];
+	cam1.projection_model_.t_[1] = stereoPair0_Params.CameraTransformationMatrix[1][3];
+	cam1.projection_model_.t_[2] = stereoPair0_Params.CameraTransformationMatrix[2][3];
 
 	StereoHomography h(cam0, cam1);
 	h.getHomography(H0, H1, f_new, p0_new, p1_new);
@@ -422,14 +437,14 @@ int set_calibration() {
 	// CAMERA 2
 	uvc_ros_driver::FPGACalibration cam2;
 	cam2.projection_model_.type_ = cam2.projection_model_.PINHOLE;
-	cam2.projection_model_.focal_length_u_ = 721.76f;
-	cam2.projection_model_.focal_length_v_ = 721.82f;
-	cam2.projection_model_.principal_point_u_ = 364.32f;
-	cam2.projection_model_.principal_point_v_ = 239.03f;
-	cam2.projection_model_.k1_ = 0.1938f;
-	cam2.projection_model_.k2_ = -0.5520f;
-	cam2.projection_model_.r1_ = 0.00f;
-	cam2.projection_model_.r2_ = 0.00f;
+	cam2.projection_model_.focal_length_u_ = stereoPair1_Params.cam0_FocalLength[0];
+	cam2.projection_model_.focal_length_v_ = stereoPair1_Params.cam0_FocalLength[1];
+	cam2.projection_model_.principal_point_u_ = stereoPair1_Params.cam0_PrincipalPoint[0];
+	cam2.projection_model_.principal_point_v_ = stereoPair1_Params.cam0_PrincipalPoint[1];
+	cam2.projection_model_.k1_ = stereoPair1_Params.cam0_DistortionCoeffs[0];
+	cam2.projection_model_.k2_ = stereoPair1_Params.cam0_DistortionCoeffs[1];
+	cam2.projection_model_.r1_ = stereoPair1_Params.cam0_DistortionCoeffs[2];
+	cam2.projection_model_.r2_ = stereoPair1_Params.cam0_DistortionCoeffs[3];
 	cam2.projection_model_.R_[0] = 1.0f;
 	cam2.projection_model_.R_[1] = 0.0f;
 	cam2.projection_model_.R_[2] = 0.0f;
@@ -443,29 +458,29 @@ int set_calibration() {
 	cam2.projection_model_.t_[1] = 0.0f;
 	cam2.projection_model_.t_[2] = 0.0f;
 
-	// CAMERA 3
+	//CAMERA 3
 	uvc_ros_driver::FPGACalibration cam3;
 	cam3.projection_model_.type_ = cam3.projection_model_.PINHOLE;
-	cam3.projection_model_.focal_length_u_ = 716.53f;
-	cam3.projection_model_.focal_length_v_ = 716.39f;
-	cam3.projection_model_.principal_point_u_ = 341.14f;
-	cam3.projection_model_.principal_point_v_ = 208.92f;
-	cam3.projection_model_.k1_ = 0.1863f;
-	cam3.projection_model_.k2_ = -0.4791f;
-	cam3.projection_model_.r1_ = 0.00f;
-	cam3.projection_model_.r2_ = 0.00f;
-	cam3.projection_model_.R_[0] = 0.9999f;
-	cam3.projection_model_.R_[1] = 0.0011f;
-	cam3.projection_model_.R_[2] = -0.0041f;
-	cam3.projection_model_.R_[3] = -0.0011f;
-	cam3.projection_model_.R_[4] = 0.9999f;
-	cam3.projection_model_.R_[5] = 0.0000f;
-	cam3.projection_model_.R_[6] = 0.0041f;
-	cam3.projection_model_.R_[7] = -0.0000f;
-	cam3.projection_model_.R_[8] = 0.9999f;
-	cam3.projection_model_.t_[0] = -0.0685f;
-	cam3.projection_model_.t_[1] = -0.0001f;
-	cam3.projection_model_.t_[2] = -0.0011f;
+	cam3.projection_model_.focal_length_u_ = stereoPair1_Params.cam1_FocalLength[0];
+	cam3.projection_model_.focal_length_v_ = stereoPair1_Params.cam1_FocalLength[1];
+	cam3.projection_model_.principal_point_u_ = stereoPair1_Params.cam1_PrincipalPoint[0];
+	cam3.projection_model_.principal_point_v_ = stereoPair1_Params.cam1_PrincipalPoint[1];
+	cam3.projection_model_.k1_ = stereoPair1_Params.cam1_DistortionCoeffs[0];
+	cam3.projection_model_.k2_ = stereoPair1_Params.cam1_DistortionCoeffs[1];
+	cam3.projection_model_.r1_ = stereoPair1_Params.cam1_DistortionCoeffs[2];
+	cam3.projection_model_.r2_ = stereoPair1_Params.cam1_DistortionCoeffs[3];
+	cam3.projection_model_.R_[0] = stereoPair1_Params.CameraTransformationMatrix[0][0];
+	cam3.projection_model_.R_[1] = stereoPair1_Params.CameraTransformationMatrix[0][1];
+	cam3.projection_model_.R_[2] = stereoPair1_Params.CameraTransformationMatrix[0][2];
+	cam3.projection_model_.R_[3] = stereoPair1_Params.CameraTransformationMatrix[1][0];
+	cam3.projection_model_.R_[4] = stereoPair1_Params.CameraTransformationMatrix[1][1];
+	cam3.projection_model_.R_[5] = stereoPair1_Params.CameraTransformationMatrix[1][2];
+	cam3.projection_model_.R_[6] = stereoPair1_Params.CameraTransformationMatrix[2][0];
+	cam3.projection_model_.R_[7] = stereoPair1_Params.CameraTransformationMatrix[2][1];
+	cam3.projection_model_.R_[8] = stereoPair1_Params.CameraTransformationMatrix[2][2];
+	cam3.projection_model_.t_[0] = stereoPair1_Params.CameraTransformationMatrix[0][3];
+	cam3.projection_model_.t_[1] = stereoPair1_Params.CameraTransformationMatrix[1][3];
+	cam3.projection_model_.t_[2] = stereoPair1_Params.CameraTransformationMatrix[2][3];
 
 	StereoHomography h2(cam2, cam3);
 	h2.getHomography(H2, H3, f_new2, p0_new2, p1_new2);
@@ -480,14 +495,14 @@ int set_calibration() {
 	// CAMERA 4
 	uvc_ros_driver::FPGACalibration cam4;
 	cam4.projection_model_.type_ = cam4.projection_model_.PINHOLE;
-	cam4.projection_model_.focal_length_u_ = 713.35f;
-	cam4.projection_model_.focal_length_v_ = 714.17f;
-	cam4.projection_model_.principal_point_u_ = 306.68f;
-	cam4.projection_model_.principal_point_v_ = 271.44f;
-	cam4.projection_model_.k1_ = 0.2279f;
-	cam4.projection_model_.k2_ = -0.5868f;
-	cam4.projection_model_.r1_ = 0.00f;
-	cam4.projection_model_.r2_ = 0.00f;
+	cam4.projection_model_.focal_length_u_ = stereoPair2_Params.cam0_FocalLength[0];
+	cam4.projection_model_.focal_length_v_ = stereoPair2_Params.cam0_FocalLength[1];
+	cam4.projection_model_.principal_point_u_ = stereoPair2_Params.cam0_PrincipalPoint[0];
+	cam4.projection_model_.principal_point_v_ = stereoPair2_Params.cam0_PrincipalPoint[1];
+	cam4.projection_model_.k1_ = stereoPair2_Params.cam0_DistortionCoeffs[0];
+	cam4.projection_model_.k2_ = stereoPair2_Params.cam0_DistortionCoeffs[1];
+	cam4.projection_model_.r1_ = stereoPair2_Params.cam0_DistortionCoeffs[2];
+	cam4.projection_model_.r2_ = stereoPair2_Params.cam0_DistortionCoeffs[3];
 	cam4.projection_model_.R_[0] = 1.0f;
 	cam4.projection_model_.R_[1] = 0.0f;
 	cam4.projection_model_.R_[2] = 0.0f;
@@ -501,29 +516,29 @@ int set_calibration() {
 	cam4.projection_model_.t_[1] = 0.0f;
 	cam4.projection_model_.t_[2] = 0.0f;
 
-	// CAMERA 5
+	//CAMERA 5
 	uvc_ros_driver::FPGACalibration cam5;
 	cam5.projection_model_.type_ = cam5.projection_model_.PINHOLE;
-	cam5.projection_model_.focal_length_u_ = 718.52f;
-	cam5.projection_model_.focal_length_v_ = 718.72f;
-	cam5.projection_model_.principal_point_u_ = 355.84f;
-	cam5.projection_model_.principal_point_v_ = 222.30f;
-	cam5.projection_model_.k1_ = 0.2044f;
-	cam5.projection_model_.k2_ = -0.5206f;
-	cam5.projection_model_.r1_ = 0.00f;
-	cam5.projection_model_.r2_ = 0.00f;
-	cam5.projection_model_.R_[0] = 0.9995f;
-	cam5.projection_model_.R_[1] = -0.0298f;
-	cam5.projection_model_.R_[2] = -0.0094f;
-	cam5.projection_model_.R_[3] = 0.0298f;
-	cam5.projection_model_.R_[4] = 0.9995f;
-	cam5.projection_model_.R_[5] = -0.0002f;
-	cam5.projection_model_.R_[6] = 0.0094f;
-	cam5.projection_model_.R_[7] = 0.0000f;
-	cam5.projection_model_.R_[8] = 0.9999f;
-	cam5.projection_model_.t_[0] = -0.0687f;
-	cam5.projection_model_.t_[1] = -0.0025f;
-	cam5.projection_model_.t_[2] = -0.0007f;
+	cam5.projection_model_.focal_length_u_ = stereoPair2_Params.cam1_FocalLength[0];
+	cam5.projection_model_.focal_length_v_ = stereoPair2_Params.cam1_FocalLength[1];
+	cam5.projection_model_.principal_point_u_ = stereoPair2_Params.cam1_PrincipalPoint[0];
+	cam5.projection_model_.principal_point_v_ = stereoPair2_Params.cam1_PrincipalPoint[1];
+	cam5.projection_model_.k1_ = stereoPair2_Params.cam1_DistortionCoeffs[0];
+	cam5.projection_model_.k2_ = stereoPair2_Params.cam1_DistortionCoeffs[1];
+	cam5.projection_model_.r1_ = stereoPair2_Params.cam1_DistortionCoeffs[2];
+	cam5.projection_model_.r2_ = stereoPair2_Params.cam1_DistortionCoeffs[3];
+	cam5.projection_model_.R_[0] = stereoPair2_Params.CameraTransformationMatrix[0][0];
+	cam5.projection_model_.R_[1] = stereoPair2_Params.CameraTransformationMatrix[0][1];
+	cam5.projection_model_.R_[2] = stereoPair2_Params.CameraTransformationMatrix[0][2];
+	cam5.projection_model_.R_[3] = stereoPair2_Params.CameraTransformationMatrix[1][0];
+	cam5.projection_model_.R_[4] = stereoPair2_Params.CameraTransformationMatrix[1][1];
+	cam5.projection_model_.R_[5] = stereoPair2_Params.CameraTransformationMatrix[1][2];
+	cam5.projection_model_.R_[6] = stereoPair2_Params.CameraTransformationMatrix[2][0];
+	cam5.projection_model_.R_[7] = stereoPair2_Params.CameraTransformationMatrix[2][1];
+	cam5.projection_model_.R_[8] = stereoPair2_Params.CameraTransformationMatrix[2][2];
+	cam5.projection_model_.t_[0] = stereoPair2_Params.CameraTransformationMatrix[0][3];
+	cam5.projection_model_.t_[1] = stereoPair2_Params.CameraTransformationMatrix[1][3];
+	cam5.projection_model_.t_[2] = stereoPair2_Params.CameraTransformationMatrix[2][3];
 
 	StereoHomography h3(cam4, cam5);
 	h3.getHomography(H4, H5, f_new3, p0_new3, p1_new3);
@@ -538,14 +553,14 @@ int set_calibration() {
 	// CAMERA 6
 	uvc_ros_driver::FPGACalibration cam6;
 	cam6.projection_model_.type_ = cam6.projection_model_.PINHOLE;
-	cam6.projection_model_.focal_length_u_ = 713.87f;
-	cam6.projection_model_.focal_length_v_ = 714.38f;
-	cam6.projection_model_.principal_point_u_ = 285.76f;
-	cam6.projection_model_.principal_point_v_ = 239.50f;
-	cam6.projection_model_.k1_ = 0.2581f;
-	cam6.projection_model_.k2_ = -0.8082f;
-	cam6.projection_model_.r1_ = 0.00f;
-	cam6.projection_model_.r2_ = 0.00f;
+	cam6.projection_model_.focal_length_u_ = stereoPair3_Params.cam0_FocalLength[0];
+	cam6.projection_model_.focal_length_v_ = stereoPair3_Params.cam0_FocalLength[1];
+	cam6.projection_model_.principal_point_u_ = stereoPair3_Params.cam0_PrincipalPoint[0];
+	cam6.projection_model_.principal_point_v_ = stereoPair3_Params.cam0_PrincipalPoint[1];
+	cam6.projection_model_.k1_ = stereoPair3_Params.cam0_DistortionCoeffs[0];
+	cam6.projection_model_.k2_ = stereoPair3_Params.cam0_DistortionCoeffs[1];
+	cam6.projection_model_.r1_ = stereoPair3_Params.cam0_DistortionCoeffs[2];
+	cam6.projection_model_.r2_ = stereoPair3_Params.cam0_DistortionCoeffs[3];
 	cam6.projection_model_.R_[0] = 1.0f;
 	cam6.projection_model_.R_[1] = 0.0f;
 	cam6.projection_model_.R_[2] = 0.0f;
@@ -559,34 +574,35 @@ int set_calibration() {
 	cam6.projection_model_.t_[1] = 0.0f;
 	cam6.projection_model_.t_[2] = 0.0f;
 
-	// CAMERA 7
+	//CAMERA 7
 	uvc_ros_driver::FPGACalibration cam7;
 	cam7.projection_model_.type_ = cam7.projection_model_.PINHOLE;
-	cam7.projection_model_.focal_length_u_ = 709.88f;
-	cam7.projection_model_.focal_length_v_ = 709.64f;
-	cam7.projection_model_.principal_point_u_ = 357.24f;
-	cam7.projection_model_.principal_point_v_ = 190.98f;
-	cam7.projection_model_.k1_ = 0.1800f;
-	cam7.projection_model_.k2_ = -0.3928f;
-	cam7.projection_model_.r1_ = 0.00f;
-	cam7.projection_model_.r2_ = 0.00f;
-	cam7.projection_model_.R_[0] = 0.9996f;
-	cam7.projection_model_.R_[1] = -0.0166f;
-	cam7.projection_model_.R_[2] = -0.0224f;
-	cam7.projection_model_.R_[3] = 0.0166f;
-	cam7.projection_model_.R_[4] = 0.9998f;
-	cam7.projection_model_.R_[5] = 0.0040f;
-	cam7.projection_model_.R_[6] = 0.0223f;
-	cam7.projection_model_.R_[7] = -0.0044f;
-	cam7.projection_model_.R_[8] = 0.9997f;
-	cam7.projection_model_.t_[0] = -0.0691f;
-	cam7.projection_model_.t_[1] = -0.0003f;
-	cam7.projection_model_.t_[2] = -0.0001f;
+	cam7.projection_model_.focal_length_u_ = stereoPair3_Params.cam1_FocalLength[0];
+	cam7.projection_model_.focal_length_v_ = stereoPair3_Params.cam1_FocalLength[1];
+	cam7.projection_model_.principal_point_u_ = stereoPair3_Params.cam1_PrincipalPoint[0];
+	cam7.projection_model_.principal_point_v_ = stereoPair3_Params.cam1_PrincipalPoint[1];
+	cam7.projection_model_.k1_ = stereoPair3_Params.cam1_DistortionCoeffs[0];
+	cam7.projection_model_.k2_ = stereoPair3_Params.cam1_DistortionCoeffs[1];
+	cam7.projection_model_.r1_ = stereoPair3_Params.cam1_DistortionCoeffs[2];
+	cam7.projection_model_.r2_ = stereoPair3_Params.cam1_DistortionCoeffs[3];
+	cam7.projection_model_.R_[0] = stereoPair3_Params.CameraTransformationMatrix[0][0];
+	cam7.projection_model_.R_[1] = stereoPair3_Params.CameraTransformationMatrix[0][1];
+	cam7.projection_model_.R_[2] = stereoPair3_Params.CameraTransformationMatrix[0][2];
+	cam7.projection_model_.R_[3] = stereoPair3_Params.CameraTransformationMatrix[1][0];
+	cam7.projection_model_.R_[4] = stereoPair3_Params.CameraTransformationMatrix[1][1];
+	cam7.projection_model_.R_[5] = stereoPair3_Params.CameraTransformationMatrix[1][2];
+	cam7.projection_model_.R_[6] = stereoPair3_Params.CameraTransformationMatrix[2][0];
+	cam7.projection_model_.R_[7] = stereoPair3_Params.CameraTransformationMatrix[2][1];
+	cam7.projection_model_.R_[8] = stereoPair3_Params.CameraTransformationMatrix[2][2];
+	cam7.projection_model_.t_[0] = stereoPair3_Params.CameraTransformationMatrix[0][3];
+	cam7.projection_model_.t_[1] = stereoPair3_Params.CameraTransformationMatrix[1][3];
+	cam7.projection_model_.t_[2] = stereoPair3_Params.CameraTransformationMatrix[2][3];
 
 	StereoHomography h4(cam6, cam7);
 	h4.getHomography(H6, H7, f_new4, p0_new4, p1_new4);
 
-	Serial_Port sp = Serial_Port("/dev/serial/by-id/usb-FTDI_FT230X_Basic_UART_DB00W5GV-if00-port0", 115200);
+	Serial_Port sp = Serial_Port("/dev/ttyUSB0", 115200);
+	//Serial_Port sp = Serial_Port("/dev/serial/by-id/usb-FTDI_FT230X_Basic_UART_DB00W5GV-if00-port0", 115200);
 
 	sp.open_serial();
 
@@ -743,9 +759,9 @@ int set_calibration() {
 	// last 4 bits activate the 4 camera pairs 0x01 = pair 1 only, 0x0F all 4 pairs
 	set_param(sp, "CAMERA_ENABLE", 15.0f);
 
-	set_param(sp, "RESETCALIB", 1.0f);
-	set_param(sp, "SETCALIB", 0.0f);
-	set_param(sp, "STEREO_ENABLE", 0.0f);
+	set_param(sp, "RESETCALIB", 0.0f);
+	set_param(sp, "SETCALIB", 1.0f);
+	set_param(sp, "STEREO_ENABLE", 1.0f);
 
 	set_param(sp, "RESETMT9V034", 1.0f);
 
@@ -756,6 +772,25 @@ int set_calibration() {
 	sp.close_serial();
 
 	return 0;
+}
+
+CameraParameters loadCustomCameraCalibration(const std::string calib_path)
+{
+	// load a camera calibration defined in the launch script
+	try {
+		YAML::Node YamlNode = YAML::LoadFile(calib_path);
+
+		if (YamlNode.IsNull()) {
+			printf("Failed to open camera calibration %s\n", calib_path.c_str());
+			exit(-1);
+		}
+
+		return parseYaml(YamlNode);
+
+	} catch (YAML::BadFile &e) {
+		printf("Failed to open camera calibration %s\nException: %s\n", calib_path.c_str(), e.what());
+		exit(-1);
+	}
 }
 
 int main(int argc, char **argv)
@@ -780,6 +815,17 @@ int main(int argc, char **argv)
 	//nh.getParam("serialconfig",user_data.serialconfig);
 
 	ros::Publisher serial_nr_pub = nh.advertise<std_msgs::String>("/vio_sensor/device_serial_nr", 1, true);
+
+	//read yaml calibration file TODO: parameter?
+	std::string package_path = ros::package::getPath("uvc_ros_driver");
+	std::string calibrationFile0_Path = package_path + "/calib/stereoPair0_Parameters.yaml";
+	std::string calibrationFile1_Path = package_path + "/calib/stereoPair1_Parameters.yaml";
+	std::string calibrationFile2_Path = package_path + "/calib/stereoPair2_Parameters.yaml";
+	std::string calibrationFile3_Path = package_path + "/calib/stereoPair3_Parameters.yaml";
+	stereoPair0_Params = loadCustomCameraCalibration(calibrationFile0_Path);
+	stereoPair1_Params = loadCustomCameraCalibration(calibrationFile1_Path);
+	stereoPair2_Params = loadCustomCameraCalibration(calibrationFile2_Path);
+	stereoPair3_Params = loadCustomCameraCalibration(calibrationFile3_Path);
 
 	//open serial port and write config to FPGA
 	if (user_data.serialconfig) {
