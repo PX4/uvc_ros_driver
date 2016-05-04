@@ -75,7 +75,6 @@ static uint16_t count_prev;
 static ros::Time last_time;
 ait_ros_messages::VioSensorMsg msg_vio;
 sensor_msgs::Imu msg_imu;
-int test_counter = 0;
 
 // struct holding all data needed in the callback
 struct UserData {
@@ -225,10 +224,10 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 
 			msg_imu.linear_acceleration.x = -acc_y;
 			msg_imu.linear_acceleration.y = -acc_x;
-			msg_imu.linear_acceleration.z = -acc_z;
+			msg_imu.linear_acceleration.z = acc_z;
 
-			msg_imu.angular_velocity.x = -gyr_y;
-			msg_imu.angular_velocity.y = -gyr_x;
+			msg_imu.angular_velocity.x = gyr_y;
+			msg_imu.angular_velocity.y = gyr_x;
 			msg_imu.angular_velocity.z = -gyr_z;
 
 			msg_vio.imu.push_back(msg_imu);
@@ -257,6 +256,7 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 
 	ros::Time stamp_time = msg_vio.header.stamp;
 
+	printf("camera id: %d   ", cam_id);
 	printf("time elapsed: %f   ", elapsed.toSec());
 	printf("framerate: %f   ", 1.0f/elapsed.toSec());
 	printf("%lu imu messages\n", msg_vio.imu.size());
@@ -279,20 +279,17 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 		}
 	}*/
 	// read the image data
-	test_counter++;
 	if (cam_id==0) { //select_cam = 0 +1
 		for (unsigned i = 0; i < frame_size; i += 2) {
 			msg_vio.left_image.data.push_back((static_cast<unsigned char *>(frame->data)[i])); // left image
 			msg_vio.right_image.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1])); // right image
 		}
-		if (test_counter % 3 == 0) {
-			user_data->image_publisher_1.publish(msg_vio);
-		}
+
+		user_data->image_publisher_1.publish(msg_vio);
 
 		msg_vio.left_image.data.clear();
 		msg_vio.right_image.data.clear();
 		msg_vio.imu.clear();
-		printf("test camera id 0   ");
 	}
 
 	if (cam_id==1) { //select_cam = 2 +3
@@ -300,13 +297,12 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 			msg_vio.left_image.data.push_back((static_cast<unsigned char *>(frame->data)[i])); // left image
 			msg_vio.right_image.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1])); // right image
 		}
-		if (test_counter % 3 == 0)
-			user_data->image_publisher_2.publish(msg_vio);
+
+		user_data->image_publisher_2.publish(msg_vio);
 
 		msg_vio.left_image.data.clear();
 		msg_vio.right_image.data.clear();
 		msg_vio.imu.clear();
-		printf("test camera id 1   ");
 	}
 
 	if (cam_id==2) { //select_cam = 4 +5
@@ -314,13 +310,12 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 			msg_vio.left_image.data.push_back((static_cast<unsigned char *>(frame->data)[i])); // left image
 			msg_vio.right_image.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1])); // right image
 		}
-		if (test_counter % 3 == 0)
-			user_data->image_publisher_3.publish(msg_vio);
+
+		user_data->image_publisher_3.publish(msg_vio);
 
 		msg_vio.left_image.data.clear();
 		msg_vio.right_image.data.clear();
 		msg_vio.imu.clear();
-		printf("test camera id 2   ");
 	}
 
 	if (cam_id==3) { //select_cam = 6 +7
@@ -328,13 +323,12 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 			msg_vio.left_image.data.push_back((static_cast<unsigned char *>(frame->data)[i])); // left image
 			msg_vio.right_image.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1])); // right image
 		}
-		if (test_counter % 3 == 0)
-			user_data->image_publisher_4.publish(msg_vio);
+
+		user_data->image_publisher_4.publish(msg_vio);
 
 		msg_vio.left_image.data.clear();
 		msg_vio.right_image.data.clear();
 		msg_vio.imu.clear();
-		printf("test camera id 3   ");
 	}
 }
 
@@ -400,7 +394,7 @@ int set_calibration() {
 	cam0.projection_model_.t_[0] = 0.0f;
 	cam0.projection_model_.t_[1] = 0.0f;
 	cam0.projection_model_.t_[2] = 0.0f;
-	printf("test focal length = %2.4f\n", stereoPair0_Params.cam0_FocalLength[0]);
+
 	//CAMERA 1
 	uvc_ros_driver::FPGACalibration cam1;
 	cam1.projection_model_.type_ = cam1.projection_model_.PINHOLE;
@@ -757,11 +751,11 @@ int set_calibration() {
 
 	set_param(sp, "CAMERA_H_FLIP", 1.0f);
 	// last 4 bits activate the 4 camera pairs 0x01 = pair 1 only, 0x0F all 4 pairs
-	set_param(sp, "CAMERA_ENABLE", 15.0f);
+	set_param(sp, "CAMERA_ENABLE", 1.0f);
 
-	set_param(sp, "RESETCALIB", 0.0f);
-	set_param(sp, "SETCALIB", 1.0f);
-	set_param(sp, "STEREO_ENABLE", 1.0f);
+	set_param(sp, "RESETCALIB", 1.0f);
+	set_param(sp, "SETCALIB", 0.0f);
+	set_param(sp, "STEREO_ENABLE", 0.0f);
 
 	set_param(sp, "RESETMT9V034", 1.0f);
 
@@ -897,6 +891,8 @@ int main(int argc, char **argv)
 				/* Start the video stream. The library will call user function cb:
 				 *   cb(frame, (void*) vio_sensor_pub)
 				 */
+				res = uvc_start_streaming(devh, &ctrl, uvc_cb, &user_data, 0);
+				uvc_stop_streaming(devh);
 				res = uvc_start_streaming(devh, &ctrl, uvc_cb, &user_data, 0);
 
 				if (res < 0) {

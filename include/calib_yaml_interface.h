@@ -11,14 +11,17 @@ struct CameraParameters { // parameters of one camera
 	double cam0_FocalLength[2];
 	double cam0_PrincipalPoint[2];
 	double cam0_DistortionCoeffs[4];
+	int cam0_CameraModel;
 	int cam0_DistortionModel;
 
 	double cam1_FocalLength[2];
 	double cam1_PrincipalPoint[2];
 	double cam1_DistortionCoeffs[4];
+	int cam1_CameraModel;
 	int cam1_DistortionModel;
 
 	double CameraTransformationMatrix[4][4];
+	enum {PINHOLE = 0, OMNI = 1};
 	enum {RADTAN = 0, EQUI = 1};
 };
 
@@ -27,8 +30,30 @@ inline CameraParameters parseYaml(const YAML::Node &node)
 {
 	CameraParameters v;
 
+	std::string pinhole = "pinhole";
+	std::string omni = "omni";
+
 	std::string radtan = "radtan";
 	std::string equi = "equi";
+
+	//-------------------------camera models----------------------------
+	YAML::Node CameraModel0 = node["cam0"]["camera_model"];
+
+	if (!omni.compare(CameraModel0.as<std::string>())) {
+		v.cam0_CameraModel = v.OMNI;
+
+	} else {
+		v.cam0_CameraModel = v.PINHOLE;
+	}
+
+	YAML::Node CameraModel1 = node["cam1"]["camera_model"];
+
+	if (!omni.compare(CameraModel1.as<std::string>())) {
+		v.cam1_CameraModel = v.OMNI;
+
+	} else {
+		v.cam1_CameraModel = v.PINHOLE;
+	}
 
 	//-------------------------camera transformation matrix----------------------------
 	YAML::Node CameraTransformationMatrix = node["cam1"]["T_cn_cnm1"];
@@ -74,16 +99,31 @@ inline CameraParameters parseYaml(const YAML::Node &node)
 
 	//-------------------------focal lengths and principal points-----------
 	YAML::Node intrinsics0 = node["cam0"]["intrinsics"];
-	YAML::Node intrinsics1 = node["cam1"]["intrinsics"];
 
-	for (std::size_t i = 0; i < 2; i++) {
-		v.cam0_FocalLength[i] = intrinsics0[i].as<double>();
-		v.cam1_FocalLength[i] = intrinsics1[i].as<double>();
+	if (v.cam0_CameraModel == v.OMNI) {
+		v.cam0_FocalLength[0] = intrinsics0[1].as<double>();
+		v.cam0_FocalLength[1] = intrinsics0[2].as<double>();
+		v.cam0_PrincipalPoint[0] = intrinsics0[3].as<double>();
+		v.cam0_PrincipalPoint[1] = intrinsics0[4].as<double>();
+	} else {
+		v.cam0_FocalLength[0] = intrinsics0[0].as<double>();
+		v.cam0_FocalLength[1] = intrinsics0[1].as<double>();
+		v.cam0_PrincipalPoint[0] = intrinsics0[2].as<double>();
+		v.cam0_PrincipalPoint[1] = intrinsics0[3].as<double>();
 	}
 
-	for (std::size_t i = 2; i < intrinsics0.size(); i++) {
-		v.cam0_PrincipalPoint[i-2] = intrinsics0[i].as<double>();
-		v.cam1_PrincipalPoint[i-2] = intrinsics1[i].as<double>();
+	YAML::Node intrinsics1 = node["cam1"]["intrinsics"];
+	
+	if (v.cam1_CameraModel == v.OMNI) {
+		v.cam1_FocalLength[0] = intrinsics1[1].as<double>();
+		v.cam1_FocalLength[1] = intrinsics1[2].as<double>();
+		v.cam1_PrincipalPoint[0] = intrinsics1[3].as<double>();
+		v.cam1_PrincipalPoint[1] = intrinsics0[4].as<double>();
+	} else {
+		v.cam1_FocalLength[0] = intrinsics1[0].as<double>();
+		v.cam1_FocalLength[1] = intrinsics1[1].as<double>();
+		v.cam1_PrincipalPoint[0] = intrinsics1[2].as<double>();
+		v.cam1_PrincipalPoint[1] = intrinsics1[3].as<double>();
 	}
 
 	return v;
