@@ -73,8 +73,11 @@ CameraParameters stereoPair3_Params = {};
 //static double acc_x_prev, acc_y_prev, acc_z_prev, gyr_x_prev, gyr_y_prev, gyr_z_prev;
 static uint16_t count_prev;
 static ros::Time last_time;
-ait_ros_messages::VioSensorMsg msg_vio;
-sensor_msgs::Imu msg_imu;
+
+bool request_shutdown_flag = false;
+bool uvc_cb_flag = false;
+bool cb_shutdown_flag = false;
+int frameCounter = 0;
 
 // struct holding all data needed in the callback
 struct UserData {
@@ -85,6 +88,9 @@ struct UserData {
 	ros::Publisher imu_publisher;
 	bool hflip;
 	bool serialconfig;
+	bool setCalibration;
+	bool depthMap;
+	int cameraConfig;
 };
 
 int16_t ShortSwap(int16_t s)
@@ -157,10 +163,13 @@ bool repeatedStart(uvc_device_handle_t *devh, uvc_stream_ctrl_t ctrl)
  * input queue. If this function takes too long, you'll start losing frames. */
 void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 {
+	uvc_cb_flag = true;
+	cb_shutdown_flag = false;
 
 	UserData *user_data = (UserData *) user_ptr;
 
-	//ait_ros_messages::VioSensorMsg msg;
+	ait_ros_messages::VioSensorMsg msg_vio;
+	sensor_msgs::Imu msg_imu;
 
 	msg_vio.header.stamp = ros::Time::now();
 
@@ -209,18 +218,7 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 		double gyr_z = double(ShortSwap(static_cast<int16_t *>(frame->data)[int((i + 1) * frame->width - 8 + 7)]) /
 				      (gyr_scale_factor / deg2rad));
 
-		//if (!(acc_x == acc_x_prev && acc_y == acc_y_prev && acc_z == acc_z_prev && gyr_x == gyr_x_prev && gyr_y == gyr_y_prev
-		//      && gyr_z == gyr_z_prev)) {
 		if(!(count == count_prev)){
-			//  printf("\nacc x %+02.4f ", acc_x);
-			//  printf("acc y %+04.4f ", acc_y);
-			//  printf("acc z %+04.4f ", acc_z);
-			//  printf("gyr x %+04.4f ", gyr_x);
-			//  printf("gyr y %+04.4f ", gyr_y);
-			//  printf("gyr z %+04.4f\n", gyr_z);
-			//  printf("count %d \n", count);
-			//  printf("temp %d \n", temp);
-			//	printf("cam_id %d \n", cam_id);
 
 			msg_imu.linear_acceleration.x = acc_y;
 			msg_imu.linear_acceleration.y = acc_x;
@@ -237,12 +235,6 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 			user_data->imu_publisher.publish(msg_imu);
 
 			count_prev = count;
-			//acc_x_prev = acc_x;
-			//acc_y_prev = acc_y;
-			//acc_z_prev = acc_z;
-			//gyr_x_prev = gyr_x;
-			//gyr_y_prev = gyr_y;
-			//gyr_z_prev = gyr_z;
 		}
 
 		for (unsigned j = 0; j < 8; j++) {
@@ -266,70 +258,30 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 	}
 
 	// read the image data
-	/*if (user_data->hflip) {
-		for (unsigned i = frame_size; i > 0; i -= 2) {
-			msg.left_image.data.push_back((static_cast<unsigned char *>(frame->data)[i])); // left image
-			msg.right_image.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1])); // right image
-		}
-
-	} else {
-		for (unsigned i = 0; i < frame_size; i += 2) {
-			msg.left_image.data.push_back((static_cast<unsigned char *>(frame->data)[i])); // left image
-			msg.right_image.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1])); // right image
-		}
-	}*/
-	// read the image data
-	if (cam_id==0) { //select_cam = 0 +1
-		for (unsigned i = 0; i < frame_size; i += 2) {
-			msg_vio.left_image.data.push_back((static_cast<unsigned char *>(frame->data)[i])); // left image
-			msg_vio.right_image.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1])); // right image
-		}
-
-		user_data->image_publisher_1.publish(msg_vio);
-
-		msg_vio.left_image.data.clear();
-		msg_vio.right_image.data.clear();
-		msg_vio.imu.clear();
+	for (unsigned i = 0; i < frame_size; i += 2) {
+		msg_vio.left_image.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1])); // left image
+		msg_vio.right_image.data.push_back((static_cast<unsigned char *>(frame->data)[i])); // right image
 	}
 
-	if (cam_id==1) { //select_cam = 2 +3
-		for (unsigned i = 0; i < frame_size; i += 2) {
-			msg_vio.left_image.data.push_back((static_cast<unsigned char *>(frame->data)[i])); // left image
-			msg_vio.right_image.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1])); // right image
-		}
-
+	// publish data
+	int modulo = 1; //increase to drop fps for calibration
+	if (cam_id==0) { //select_cam = 0 + 1
+		frameCounter++;
+		if (frameCounter % modulo == 0)
+			user_data->image_publisher_1.publish(msg_vio);
+	}
+	if (cam_id==1 && frameCounter % modulo == 0) //select_cam = 2 + 3
 		user_data->image_publisher_2.publish(msg_vio);
-
-		msg_vio.left_image.data.clear();
-		msg_vio.right_image.data.clear();
-		msg_vio.imu.clear();
-	}
-
-	if (cam_id==2) { //select_cam = 4 +5
-		for (unsigned i = 0; i < frame_size; i += 2) {
-			msg_vio.left_image.data.push_back((static_cast<unsigned char *>(frame->data)[i])); // left image
-			msg_vio.right_image.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1])); // right image
-		}
-
+	if (cam_id==2 && frameCounter % modulo == 0) //select_cam = 4 + 5
 		user_data->image_publisher_3.publish(msg_vio);
-
-		msg_vio.left_image.data.clear();
-		msg_vio.right_image.data.clear();
-		msg_vio.imu.clear();
-	}
-
-	if (cam_id==3) { //select_cam = 6 +7
-		for (unsigned i = 0; i < frame_size; i += 2) {
-			msg_vio.left_image.data.push_back((static_cast<unsigned char *>(frame->data)[i])); // left image
-			msg_vio.right_image.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1])); // right image
-		}
-
+	if (cam_id==3 && frameCounter % modulo == 0) //select_cam = 6 + 7
 		user_data->image_publisher_4.publish(msg_vio);
 
-		msg_vio.left_image.data.clear();
-		msg_vio.right_image.data.clear();
-		msg_vio.imu.clear();
-	}
+	msg_vio.left_image.data.clear();
+	msg_vio.right_image.data.clear();
+	msg_vio.imu.clear();
+
+	cb_shutdown_flag = true;
 }
 
 int set_param(Serial_Port &sp, const char* name, float val) {
@@ -363,7 +315,7 @@ int set_param(Serial_Port &sp, const char* name, float val) {
 	return 0;
 }
 
-int set_calibration() {
+int set_calibration(UserData *userData) {
 
 	Eigen::Matrix3d H0;
 	Eigen::Matrix3d H1;
@@ -749,13 +701,18 @@ int set_calibration() {
 	set_param(sp, "STEREO_LR_CAM7", 4.0f);
 	set_param(sp, "STEREO_TH_CAM7", 100.0f);
 
-	set_param(sp, "CAMERA_H_FLIP", 1.0f);
+	set_param(sp, "CAMERA_H_FLIP", float(userData->hflip));
 	// last 4 bits activate the 4 camera pairs 0x01 = pair 1 only, 0x0F all 4 pairs
-	set_param(sp, "CAMERA_ENABLE", 1.0f);
+	set_param(sp, "CAMERA_ENABLE", float(userData->cameraConfig));
 
-	set_param(sp, "RESETCALIB", 1.0f);
-	set_param(sp, "SETCALIB", 0.0f);
-	set_param(sp, "STEREO_ENABLE", 0.0f);
+	if(userData->setCalibration)
+		set_param(sp, "RESETCALIB", 0.0f);
+	else
+		set_param(sp, "RESETCALIB", 1.0f);
+
+	set_param(sp, "SETCALIB", float(userData->setCalibration));
+
+	set_param(sp, "STEREO_ENABLE", float(userData->depthMap));
 
 	set_param(sp, "RESETMT9V034", 1.0f);
 
@@ -787,12 +744,18 @@ CameraParameters loadCustomCameraCalibration(const std::string calib_path)
 	}
 }
 
+void mySigintHandler(int sig)
+{
+  request_shutdown_flag = true;
+}
+
 int main(int argc, char **argv)
 {
 
-
-	ros::init(argc, argv, "uvc_ros_driver");
+	ros::init(argc, argv, "uvc_ros_driver", ros::init_options::NoSigintHandler);
 	ros::NodeHandle nh("~");  // private nodehandle
+
+	signal(SIGINT, mySigintHandler);
 
 	last_time = ros::Time::now();
 
@@ -804,9 +767,12 @@ int main(int argc, char **argv)
 
 	user_data.imu_publisher = nh.advertise<sensor_msgs::Imu>("/vio_imu", 0);
 
-	nh.param<bool>("hflip", user_data.hflip, false);
-	nh.param<bool>("serialconfig", user_data.serialconfig, false);
-	//nh.getParam("serialconfig",user_data.serialconfig);
+	//get params from launch file
+	nh.getParam("hflip",user_data.hflip);
+	nh.getParam("serialconfig",user_data.serialconfig);
+	nh.getParam("setCalibration",user_data.setCalibration);
+	nh.getParam("depthMap",user_data.depthMap);
+	nh.getParam("cameraConfig",user_data.cameraConfig);
 
 	ros::Publisher serial_nr_pub = nh.advertise<std_msgs::String>("/vio_sensor/device_serial_nr", 1, true);
 
@@ -823,7 +789,7 @@ int main(int argc, char **argv)
 
 	//open serial port and write config to FPGA
 	if (user_data.serialconfig) {
-	  set_calibration();
+	  set_calibration(&user_data);
 	}
 
 	uvc_context_t *ctx;
@@ -892,8 +858,14 @@ int main(int argc, char **argv)
 				 *   cb(frame, (void*) vio_sensor_pub)
 				 */
 				res = uvc_start_streaming(devh, &ctrl, uvc_cb, &user_data, 0);
-				uvc_stop_streaming(devh);
-				res = uvc_start_streaming(devh, &ctrl, uvc_cb, &user_data, 0);
+				int sleepTime_us = 200000;
+				usleep(sleepTime_us);
+				while (!uvc_cb_flag) {
+					printf("retry start streaming...\n");
+					uvc_stop_streaming(devh);
+					res = uvc_start_streaming(devh, &ctrl, uvc_cb, &user_data, 0);
+					usleep(sleepTime_us);
+				}
 
 				if (res < 0) {
 					uvc_perror(res, "start_streaming"); /* unable to start stream */
@@ -901,11 +873,20 @@ int main(int argc, char **argv)
 
 				} else {
 
-					ros::spin();
+					while(!request_shutdown_flag) {
+						ros::spinOnce();
+					}
 
 					/* End the stream. Blocks until last callback is serviced */
+					while (!cb_shutdown_flag) {
+						//whait for callback
+						printf("waiting for shutdown...\n");
+						usleep(sleepTime_us);
+					}
+
 					uvc_stop_streaming(devh);
 					ROS_INFO("Done streaming.");
+					ros::shutdown();
 				}
 			}
 
