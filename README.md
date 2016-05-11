@@ -27,7 +27,7 @@ Clone this repository in your catkin workspace.
 This package depends on MAVLink. To initialize and check out the submodule, run this:
 
 ```bash
-git submodule init --recursive
+git submodule init
 git submodule update --recursive
 ```
 
