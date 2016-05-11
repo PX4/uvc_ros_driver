@@ -1,12 +1,18 @@
 <launch>
 
-  <arg name="hflip" default="false" />     <!-- Horizontal flip -->
-  <arg name="serialconfig" default="false" />     <!-- use serial interface to upload config -->
+  <arg name="hflip" default="true" />     <!-- Horizontal flip -->
+  <arg name="serialconfig" default="true" />     <!-- use serial interface to upload config -->
+  <arg name="setCalibration" default="true" />
+  <arg name="depthMap" default="true" />
+  <arg name="cameraConfig" default="1" />   <!-- 1: 2 front cameras, 3: 2 front + two left? cameras -->
 
   <!-- camera node -->
   <node pkg="uvc_ros_driver" name="uvc_ros_driver_node" type="uvc_ros_driver_node" output="screen">
     <param name="hflip" type="bool"  value="$(arg hflip)" />
     <param name="serialconfig" type="bool"  value="$(arg serialconfig)" />
+    <param name="setCalibration" type="bool"  value="$(arg setCalibration)" />
+    <param name="depthMap" type="bool"  value="$(arg depthMap)" />
+    <param name="cameraConfig" type="int"  value="$(arg cameraConfig)" />
   </node>
 
 </launch>
