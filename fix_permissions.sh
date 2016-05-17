@@ -10,4 +10,8 @@ SUBSYSTEMS==\"usb\", ENV{DEVTYPE}==\"usb_device\", ATTRS{idVendor}==\"$idVendor\
 "
 echo "$string" >> /etc/udev/rules.d/99-uvc.rules
 
+string2="usbserial vendor=0x$idVendor product=0x$idProduct"
+
+echo "$string2" >> /etc/modules
+
 echo "Unplug the USB device and plug it back in."
