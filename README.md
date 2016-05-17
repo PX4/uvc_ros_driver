@@ -37,14 +37,15 @@ Build using `catkin_make` according to the ROS instructions on http://ros.org.
 
 ## Set up Permissions
 
+Ubuntu comes with a serial modem manager which interferes heavily with any robotics related use of a serial port (or USB serial). It can deinstalled without side effects:
+```bash
+sudo apt-get remove modemmanager
+```
+
 To get proper permissions for the USB device, run the following script with the device attached:
 ```bash
 sudo usermod -a -G dialout $USER
 sudo ./fix_permissions.sh
-```
-Ubuntu comes with a serial modem manager which interferes heavily with any robotics related use of a serial port (or USB serial). It can deinstalled without side effects:
-```bash
-sudo apt-get remove modemmanager
 ```
 Check the device vendor and product id from the list and enter them when prompted. The printed list has the format
 `... {idDevice:idProduct} ...`.
