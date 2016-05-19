@@ -82,7 +82,7 @@ struct UserData {
 	ros::Publisher image_publisher_3;
 	ros::Publisher image_publisher_4;
 	ros::Publisher imu_publisher;
-	bool hflip;
+	bool flip;
 	bool serialconfig;
 	bool setCalibration;
 	bool depthMap;
@@ -560,7 +560,7 @@ int set_calibration(UserData *userData, CameraParameters camParams) {
 	set_param(sp, "STEREO_LR_CAM7", 4.0f);
 	set_param(sp, "STEREO_TH_CAM7", 100.0f);
 
-	set_param(sp, "CAMERA_H_FLIP", float(userData->hflip));
+	set_param(sp, "CAMERA_H_FLIP", float(userData->flip));
 	// last 4 bits activate the 4 camera pairs 0x01 = pair 1 only, 0x0F all 4 pairs
 	set_param(sp, "CAMERA_ENABLE", float(userData->cameraConfig));
 
@@ -628,7 +628,7 @@ int main(int argc, char **argv)
 	user_data.imu_publisher = nh.advertise<sensor_msgs::Imu>("/vio_imu", 0);
 
 	//get params from launch file
-	nh.getParam("hflip",user_data.hflip);
+	nh.getParam("flip",user_data.flip);
 	nh.getParam("serialconfig",user_data.serialconfig);
 	nh.getParam("setCalibration",user_data.setCalibration);
 	nh.getParam("depthMap",user_data.depthMap);

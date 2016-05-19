@@ -1,6 +1,6 @@
 <launch>
 
-  <arg name="hflip" default="true" />     <!-- Horizontal flip -->
+  <arg name="flip" default="false" />     <!-- Horizontal + Vertical flip -->
   <arg name="serialconfig" default="true" />     <!-- use serial interface to upload config -->
   <arg name="setCalibration" default="true" />
   <arg name="depthMap" default="true" />
