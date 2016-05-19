@@ -8,7 +8,7 @@
 
   <!-- camera node -->
   <node pkg="uvc_ros_driver" name="uvc_ros_driver_node" type="uvc_ros_driver_node" output="screen">
-    <param name="hflip" type="bool"  value="$(arg hflip)" />
+    <param name="flip" type="bool"  value="$(arg flip)" />
     <param name="serialconfig" type="bool"  value="$(arg serialconfig)" />
     <param name="setCalibration" type="bool"  value="$(arg setCalibration)" />
     <param name="depthMap" type="bool"  value="$(arg depthMap)" />
