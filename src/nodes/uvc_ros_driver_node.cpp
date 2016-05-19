@@ -269,8 +269,8 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 
 	// read the image data
 	for (unsigned i = 0; i < frame_size; i += 2) {
-		msg_vio.left_image.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1])); // left image
-		msg_vio.right_image.data.push_back((static_cast<unsigned char *>(frame->data)[i])); // right image
+		msg_vio.left_image.data.push_back((static_cast<unsigned char *>(frame->data)[i]));
+		msg_vio.right_image.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1]));
 	}
 
 	// publish data
@@ -326,12 +326,10 @@ int set_param(Serial_Port &sp, const char* name, float val) {
 
 int set_calibration(UserData *userData, CameraParameters camParams) {
 
-	// CAMERA 0
-	//uvc_ros_driver::FPGACalibration cam0;
-	int number_cameras = 8;
-	uvc_ros_driver::FPGACalibration cams[number_cameras];
+	int num_cameras = 8;
+	uvc_ros_driver::FPGACalibration cams[num_cameras];
 	int stereo_number = 0;
-	for (int cam = 0; cam < number_cameras; cam++) {
+	for (int cam = 0; cam < num_cameras; cam++) {
 		cams[cam].projection_model_.type_ = cams[cam].projection_model_.PINHOLE;
 		cams[cam].projection_model_.focal_length_u_ = camParams.FocalLength[cam][0];
 		cams[cam].projection_model_.focal_length_v_ = camParams.FocalLength[cam][1];
@@ -640,8 +638,7 @@ int main(int argc, char **argv)
 
 	//read yaml calibration file TODO: launch file parameter?
 	std::string package_path = ros::package::getPath("uvc_ros_driver");
-	//std::string calibrationFile_Path = package_path + "/calib/Omni_Parameters.yaml";
-	std::string calibrationFile_Path = package_path + "/calib/stereoPair0_Parameters.yaml";
+	std::string calibrationFile_Path = package_path + "/calib/Omni_Parameters.yaml";
 	CameraParameters camParams = loadCustomCameraCalibration(calibrationFile_Path);
 
 	//open serial port and write config to FPGA
