@@ -74,6 +74,7 @@ static ros::Time last_time;
 bool request_shutdown_flag = false;
 bool uvc_cb_flag = false;
 int frameCounter = 0;
+ros::Time frame_time;
 
 // struct holding all data needed in the callback
 struct UserData {
@@ -276,16 +277,23 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 	// publish data
 	int modulo = 1; //increase to drop fps for calibration
 	if (cam_id==0) { //select_cam = 0 + 1
+		frame_time = msg_vio.header.stamp;
 		frameCounter++;
 		if (frameCounter % modulo == 0)
 			user_data->image_publisher_1.publish(msg_vio);
 	}
-	if (cam_id==1 && frameCounter % modulo == 0) //select_cam = 2 + 3
+	if (cam_id==1 && frameCounter % modulo == 0) { //select_cam = 2 + 3
+		msg_vio.header.stamp = frame_time;
 		user_data->image_publisher_2.publish(msg_vio);
-	if (cam_id==2 && frameCounter % modulo == 0) //select_cam = 4 + 5
+	}
+	if (cam_id==2 && frameCounter % modulo == 0) { //select_cam = 4 + 5
+		msg_vio.header.stamp = frame_time;
 		user_data->image_publisher_3.publish(msg_vio);
-	if (cam_id==3 && frameCounter % modulo == 0) //select_cam = 6 + 7
+	}
+	if (cam_id==3 && frameCounter % modulo == 0) { //select_cam = 6 + 7
+		msg_vio.header.stamp = frame_time;
 		user_data->image_publisher_4.publish(msg_vio);
+	}
 
 	msg_vio.left_image.data.clear();
 	msg_vio.right_image.data.clear();
