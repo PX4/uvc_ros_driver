@@ -229,15 +229,25 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 		double gyr_z = double(ShortSwap(static_cast<int16_t *>(frame->data)[int((i + 1) * frame->width - 8 + 7)]) /
 				      (gyr_scale_factor / deg2rad));
 
-		if(!(count == count_prev)){
+		if (!(count == count_prev)){
 
-			msg_imu.linear_acceleration.x = acc_y;
-			msg_imu.linear_acceleration.y = acc_x;
-			msg_imu.linear_acceleration.z = -acc_z;
+			if (user_data->flip) {
+				msg_imu.linear_acceleration.x = acc_y;
+				msg_imu.linear_acceleration.y = acc_x;
+				msg_imu.linear_acceleration.z = -acc_z;
 
-			msg_imu.angular_velocity.x = gyr_y;
-			msg_imu.angular_velocity.y = gyr_x;
-			msg_imu.angular_velocity.z = -gyr_z;
+				msg_imu.angular_velocity.x = gyr_y;
+				msg_imu.angular_velocity.y = gyr_x;
+				msg_imu.angular_velocity.z = -gyr_z;
+			} else {
+				msg_imu.linear_acceleration.x = -acc_y;
+				msg_imu.linear_acceleration.y = -acc_x;
+				msg_imu.linear_acceleration.z = -acc_z;
+
+				msg_imu.angular_velocity.x = -gyr_y;
+				msg_imu.angular_velocity.y = -gyr_x;
+				msg_imu.angular_velocity.z = -gyr_z;
+			}
 
 			msg_vio.imu.push_back(msg_imu);
 
