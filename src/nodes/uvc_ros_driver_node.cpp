@@ -646,17 +646,19 @@ int main(int argc, char **argv)
 	user_data.imu_publisher = nh.advertise<sensor_msgs::Imu>("/vio_imu", 0);
 
 	//get params from launch file
+	std::string calibrationFileName;
 	nh.getParam("flip",user_data.flip);
 	nh.getParam("serialconfig",user_data.serialconfig);
 	nh.getParam("setCalibration",user_data.setCalibration);
 	nh.getParam("depthMap",user_data.depthMap);
 	nh.getParam("cameraConfig",user_data.cameraConfig);
+	nh.getParam("cameraConfigFile", calibrationFileName);
 
 	ros::Publisher serial_nr_pub = nh.advertise<std_msgs::String>("/vio_sensor/device_serial_nr", 1, true);
 
-	//read yaml calibration file TODO: launch file parameter?
+	//read yaml calibration file from launch file parameter, file muss be located in the calib folder
 	std::string package_path = ros::package::getPath("uvc_ros_driver");
-	std::string calibrationFile_Path = package_path + "/calib/Omni_Parameters.yaml";
+	std::string calibrationFile_Path = package_path + "/calib/" + calibrationFileName;
 	CameraParameters camParams = loadCustomCameraCalibration(calibrationFile_Path);
 
 	//open serial port and write config to FPGA
