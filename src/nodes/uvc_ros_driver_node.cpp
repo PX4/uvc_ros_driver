@@ -75,6 +75,7 @@ bool request_shutdown_flag = false;
 bool uvc_cb_flag = false;
 int frameCounter = 0;
 ros::Time frame_time;
+Serial_Port sp = Serial_Port("/dev/ttyUSB0", 115200);
 
 // struct holding all data needed in the callback
 struct UserData {
@@ -424,7 +425,7 @@ int set_calibration(UserData *userData, CameraParameters camParams) {
 
 	//writeFocalLengthToYaml();
 
-	Serial_Port sp = Serial_Port("/dev/ttyUSB0", 115200);
+	//Serial_Port sp = Serial_Port("/dev/ttyUSB0", 115200);
 	//Serial_Port sp = Serial_Port("/dev/serial/by-id/usb-FTDI_FT230X_Basic_UART_DB00W5GV-if00-port0", 115200);
 
 	sp.open_serial();
@@ -597,7 +598,7 @@ int set_calibration(UserData *userData, CameraParameters camParams) {
 	//std::cout<<"H1: "<<H1<<"\n";
 	//ROS_INFO("fnew %f",f_new);
 
-	sp.close_serial();
+	//sp.close_serial();
 
 	return 0;
 }
@@ -751,6 +752,11 @@ int main(int argc, char **argv)
 						ros::spinOnce();
 					}
 
+
+					set_param(sp, "CAMERA_ENABLE", float(0));
+					ROS_INFO("Wait Sensor Shutdown.");
+					usleep(1500000);
+					ROS_INFO("Sensor Shutdown.");
 					uvc_stop_streaming(devh);
 					ROS_INFO("Done streaming.");
 					ros::shutdown();
@@ -758,6 +764,7 @@ int main(int argc, char **argv)
 			}
 
 			/* Release our handle on the device */
+			sp.close_serial();
 			uvc_close(devh);
 			ROS_INFO("Device closed");
 		}
