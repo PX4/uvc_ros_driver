@@ -74,6 +74,7 @@ static ros::Time last_time;
 bool request_shutdown_flag = false;
 bool uvc_cb_flag = false;
 int frameCounter = 0;
+int calibrationMode = 0;
 ros::Time frame_time;
 Serial_Port sp = Serial_Port("/dev/ttyUSB0", 115200);
 
@@ -287,6 +288,9 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 
 	// publish data
 	int modulo = 1; //increase to drop fps for calibration
+	if (calibrationMode != 0){
+		modulo = 12 / calibrationMode;
+	}
 	if (cam_id==0) { //select_cam = 0 + 1
 		frame_time = msg_vio.header.stamp;
 		frameCounter++;
@@ -654,6 +658,7 @@ int main(int argc, char **argv)
 	nh.getParam("depthMap",user_data.depthMap);
 	nh.getParam("cameraConfig",user_data.cameraConfig);
 	nh.getParam("cameraConfigFile", calibrationFileName);
+	nh.getParam("calibrationMode", calibrationMode);
 
 	ros::Publisher serial_nr_pub = nh.advertise<std_msgs::String>("/vio_sensor/device_serial_nr", 1, true);
 
