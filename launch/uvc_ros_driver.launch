@@ -3,6 +3,8 @@
   <arg name="flip" default="false" />     <!-- Horizontal + Vertical flip -->
   <arg name="serialconfig" default="true" />     <!-- use serial interface to upload config -->
   <arg name="setCalibration" default="true" />
+  <!-- calibrationMode 0 no calibration, 1 calibration for 1 camera pair, 2 calibration for 2 camera pair s and so on -->
+  <arg name="calibrationMode" default="0" />
   <arg name="depthMap" default="true" />
   <arg name="cameraConfig" default="1" />   <!-- 1: 2 front cameras, 3: 2 front + two left? cameras -->
   <!-- calibration file in folder calib -->
@@ -13,6 +15,7 @@
     <param name="flip" type="bool"  value="$(arg flip)" />
     <param name="serialconfig" type="bool"  value="$(arg serialconfig)" />
     <param name="setCalibration" type="bool"  value="$(arg setCalibration)" />
+    <param name="calibrationMode" type="int"  value="$(arg calibrationMode)" />
     <param name="depthMap" type="bool"  value="$(arg depthMap)" />
     <param name="cameraConfig" type="int"  value="$(arg cameraConfig)" />
     <param name="cameraConfigFile" type="string"  value="$(arg cameraConfigFile)" />
