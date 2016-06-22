@@ -565,8 +565,8 @@ int set_calibration(UserData *userData, CameraParameters camParams) {
 
 	set_param(sp, "STEREO_P1_CAM1", 16.0f);
 	set_param(sp, "STEREO_P2_CAM1", 250.0f);
-	set_param(sp, "STEREO_LR_CAM1", 2.0f);
-	set_param(sp, "STEREO_TH_CAM1", 40.0f);
+	set_param(sp, "STEREO_LR_CAM1", 4.0f);
+	set_param(sp, "STEREO_TH_CAM1", 100.0f);
 
 	set_param(sp, "STEREO_P1_CAM3", 16.0f);
 	set_param(sp, "STEREO_P2_CAM3", 250.0f);
