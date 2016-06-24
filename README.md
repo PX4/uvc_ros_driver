@@ -48,9 +48,19 @@ sudo usermod -a -G dialout $USER
 sudo ./fix_permissions.sh
 ```
 Check the device vendor and product id from the list and enter them when prompted. The printed list has the format
-`... {idDevice:idProduct} ...`.
+`... {idVendor:idProduct} ...`.
 
 Log out of Ubuntu and Log back in. Unplug the device and plug it back in to load it with the new permissions.
+
+## Set up Permissions on Odroid-XU4
+
+To set up the permissions for the USB device on the Odroid, run this script:
+```bash
+sudo usermod -a -G dialout $USER
+sudo ./fix_permissions_odroid.sh
+```
+Check the device vendor and product id from the list and enter them when prompted. The printed list has the format
+`... {idVendor:idProduct} ...`.
 
 # Running the driver
 ```bash
