@@ -39,6 +39,10 @@
  *  The code below is based on the example provided at https://int80k.com/libuvc/doc/
  */
 
+#if defined __ARM_NEON__
+	#include <arm_neon.h>
+#endif
+
 #include <stdio.h>
 #include <unistd.h>
 #include <sstream>
@@ -155,6 +159,27 @@ bool repeatedStart(uvc_device_handle_t *devh, uvc_stream_ctrl_t ctrl)
 
 	// failed after max_attempts
 	return false;
+}
+
+void deinterleave(const uint8_t *mixed, uint8_t *array1, uint8_t *array2, size_t mixedLength) {
+#if defined __ARM_NEON__
+		size_t vectors = mixedLength / 32;
+		mixedLength %= 32;
+		while (vectors --> 0) {
+				const uint8x16_t src0 = vld1q_u8(mixed);
+				const uint8x16_t src1 = vld1q_u8(mixed + 16);
+				const uint8x16x2_t dst = vuzpq_u8(src0, src1);
+				vst1q_u8(array1, dst.val[0]);
+				vst1q_u8(array2, dst.val[1]);
+				mixed += 32;
+				array1 += 16;
+				array2 += 16;
+		}
+#endif
+		for (size_t i=0; i<mixedLength/2; ++i) {
+			array1[i] = mixed[2*i];
+			array2[i] = mixed[2*i + 1];
+		}
 }
 
 void writeFocalLengthToYaml()
@@ -280,11 +305,25 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 		msg_vio.imu[i].header.stamp = stamp_time - elapsed +ros::Duration(elapsed * (double(i) / msg_vio.imu.size()));
 	}
 
+	// temp container for the 2 images
+  uint8_t left[frame_size/2];
+	uint8_t right[frame_size/2];
 	// read the image data
-	for (unsigned i = 0; i < frame_size; i += 2) {
-		msg_vio.left_image.data.push_back((static_cast<unsigned char *>(frame->data)[i]));
-		msg_vio.right_image.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1]));
-	}
+	deinterleave(static_cast<unsigned char *>(frame->data),left, right, (size_t)frame_size);
+
+	sensor_msgs::fillImage( msg_vio.left_image,
+													sensor_msgs::image_encodings::MONO8,
+													frame->height, // height
+													frame->width, // width
+													frame->width, // stepSize
+													left);
+
+	sensor_msgs::fillImage( msg_vio.right_image,
+													sensor_msgs::image_encodings::MONO8,
+													frame->height, // height
+													frame->width, // width
+													frame->width, // stepSize
+													right);
 
 	// publish data
 	int modulo = 1; //increase to drop fps for calibration
