@@ -14,4 +14,4 @@ string2="usbserial vendor=0x$idVendor product=0x$idProduct"
 
 echo "$string2" >> /etc/modules
 
-echo "Unplug the USB device and plug it back in."
+echo "Unplug the USB device and reboot your system."
