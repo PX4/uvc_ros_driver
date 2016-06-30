@@ -189,14 +189,14 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 	msg_vio.right_image.header.stamp = msg_vio.header.stamp;
 
 	msg_vio.left_image.height = frame->height;
-	msg_vio.left_image.width = frame->width;
+    msg_vio.left_image.width = frame->width-16;
 	msg_vio.left_image.encoding = sensor_msgs::image_encodings::MONO8;
-	msg_vio.left_image.step = frame->width;
+    msg_vio.left_image.step = frame->width-16;
 
 	msg_vio.right_image.height = frame->height;
-	msg_vio.right_image.width = frame->width;
+    msg_vio.right_image.width = frame->width-16;
 	msg_vio.right_image.encoding = sensor_msgs::image_encodings::MONO8;
-	msg_vio.right_image.step = frame->width;
+    msg_vio.right_image.step = frame->width-16;
 
 	unsigned frame_size = frame->height * frame->width * 2;
 
@@ -207,7 +207,7 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 
 	for (unsigned i = 0; i < frame->height; i += 1) {
 
-		uint16_t count = ShortSwap(static_cast<uint16_t *>(frame->data)[int((i + 1) * frame->width - 8 + 0)]);
+        uint16_t count = ShortSwap(static_cast<uint16_t *>(frame->data)[int((i + 1) * frame->width - 8 + 0)]);
 
 		//detect cam_id in first row
 		if(i == 0){
@@ -280,13 +280,15 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 	}
 
 	// read the image data
-	for (unsigned i = 0; i < frame_size; i += 2) {
-		msg_vio.left_image.data.push_back((static_cast<unsigned char *>(frame->data)[i]));
-		msg_vio.right_image.data.push_back((static_cast<unsigned char *>(frame->data)[i + 1]));
-	}
+    for (unsigned i = 0; i < frame->height; i++) {
+        for (unsigned j = 0; j < frame->width*2-16*2; j=j+2) {
+            msg_vio.left_image.data.push_back((static_cast<unsigned char *>(frame->data)[i*768*2+j]));
+            msg_vio.right_image.data.push_back((static_cast<unsigned char *>(frame->data)[i*768*2+j + 1]));
+        }
+     }
 
 	// publish data
-	int modulo = 1; //increase to drop fps for calibration
+    int modulo = 1; //increase to drop fps for calibration
 	if (cam_id==0) { //select_cam = 0 + 1
 		frame_time = msg_vio.header.stamp;
 		frameCounter++;
@@ -469,6 +471,8 @@ int set_calibration(UserData *userData, CameraParameters camParams) {
 	set_param(sp, "PARAM_FCY_CAM3", f_new2);
 	set_param(sp, "PARAM_KC1_CAM3", cams[2].projection_model_.k1_);
 	set_param(sp, "PARAM_KC2_CAM3", cams[2].projection_model_.k2_);
+    set_param(sp, "PARAM_P1_CAM3", cams[2].projection_model_.r1_);
+    set_param(sp, "PARAM_P2_CAM3", cams[2].projection_model_.r2_);
 	set_param(sp, "PARAM_H11_CAM3", H2(0, 0));
 	set_param(sp, "PARAM_H12_CAM3", H2(0, 1));
 	set_param(sp, "PARAM_H13_CAM3", H2(0, 2));
@@ -481,10 +485,12 @@ int set_calibration(UserData *userData, CameraParameters camParams) {
 
 	set_param(sp, "PARAM_CCX_CAM4", p1_new2[0]);
 	set_param(sp, "PARAM_CCY_CAM4", p1_new2[1]);
-	set_param(sp, "PARAM_FCX_CAM4", f_new2);
-	set_param(sp, "PARAM_FCY_CAM4", f_new2);
+    set_param(sp, "PARAM_FCX_CAM4", f_new2);
+    set_param(sp, "PARAM_FCY_CAM4", f_new2);
 	set_param(sp, "PARAM_KC1_CAM4", cams[3].projection_model_.k1_);
 	set_param(sp, "PARAM_KC2_CAM4", cams[3].projection_model_.k2_);
+    set_param(sp, "PARAM_P1_CAM4", cams[3].projection_model_.r1_);
+    set_param(sp, "PARAM_P2_CAM4", cams[3].projection_model_.r2_);
 	set_param(sp, "PARAM_H11_CAM4", H3(0, 0));
 	set_param(sp, "PARAM_H12_CAM4", H3(0, 1));
 	set_param(sp, "PARAM_H13_CAM4", H3(0, 2));
@@ -497,10 +503,12 @@ int set_calibration(UserData *userData, CameraParameters camParams) {
 
 	set_param(sp, "PARAM_CCX_CAM5", p0_new3[0]);
 	set_param(sp, "PARAM_CCY_CAM5", p0_new3[1]);
-	set_param(sp, "PARAM_FCX_CAM5", f_new3);
-	set_param(sp, "PARAM_FCY_CAM5", f_new3);
+    set_param(sp, "PARAM_FCX_CAM5", f_new3);
+    set_param(sp, "PARAM_FCY_CAM5", f_new3);
 	set_param(sp, "PARAM_KC1_CAM5", cams[4].projection_model_.k1_);
 	set_param(sp, "PARAM_KC2_CAM5", cams[4].projection_model_.k2_);
+    set_param(sp, "PARAM_P1_CAM5", cams[4].projection_model_.r1_);
+    set_param(sp, "PARAM_P2_CAM5", cams[4].projection_model_.r2_);
 	set_param(sp, "PARAM_H11_CAM5", H4(0, 0));
 	set_param(sp, "PARAM_H12_CAM5", H4(0, 1));
 	set_param(sp, "PARAM_H13_CAM5", H4(0, 2));
@@ -517,6 +525,8 @@ int set_calibration(UserData *userData, CameraParameters camParams) {
 	set_param(sp, "PARAM_FCY_CAM6", f_new3);
 	set_param(sp, "PARAM_KC1_CAM6", cams[5].projection_model_.k1_);
 	set_param(sp, "PARAM_KC2_CAM6", cams[5].projection_model_.k2_);
+    set_param(sp, "PARAM_P1_CAM6", cams[5].projection_model_.r1_);
+    set_param(sp, "PARAM_P2_CAM6", cams[5].projection_model_.r2_);
 	set_param(sp, "PARAM_H11_CAM6", H5(0, 0));
 	set_param(sp, "PARAM_H12_CAM6", H5(0, 1));
 	set_param(sp, "PARAM_H13_CAM6", H5(0, 2));
@@ -524,7 +534,7 @@ int set_calibration(UserData *userData, CameraParameters camParams) {
 	set_param(sp, "PARAM_H22_CAM6", H5(1, 1));
 	set_param(sp, "PARAM_H23_CAM6", H5(1, 2));
 	set_param(sp, "PARAM_H31_CAM6", H5(2, 0));
-	set_param(sp, "PARAM_H32_CAM6", H5(2, 1));
+    set_param(sp, "PARAM_H32_CAM6", H5(2, 1));
 	set_param(sp, "PARAM_H33_CAM6", H5(2, 2));
 
 	set_param(sp, "PARAM_CCX_CAM7", p0_new4[0]);
@@ -561,23 +571,25 @@ int set_calibration(UserData *userData, CameraParameters camParams) {
 
 	set_param(sp, "STEREO_P1_CAM1", 16.0f);
 	set_param(sp, "STEREO_P2_CAM1", 250.0f);
-	set_param(sp, "STEREO_LR_CAM1", 4.0f);
-	set_param(sp, "STEREO_TH_CAM1", 100.0f);
+    set_param(sp, "STEREO_LR_CAM1", 4.0f);
+    set_param(sp, "STEREO_TH_CAM1", 140.0f);
 
-	set_param(sp, "STEREO_P1_CAM3", 16.0f);
-	set_param(sp, "STEREO_P2_CAM3", 250.0f);
+    set_param(sp, "STEREO_P1_CAM3", 8.0f);
+    set_param(sp, "STEREO_P2_CAM3", 240.0f);
 	set_param(sp, "STEREO_LR_CAM3", 4.0f);
-	set_param(sp, "STEREO_TH_CAM3", 100.0f);
+    set_param(sp, "STEREO_TH_CAM3", 140.0f);
 
-	set_param(sp, "STEREO_P1_CAM5", 16.0f);
-	set_param(sp, "STEREO_P2_CAM5", 250.0f);
+    set_param(sp, "STEREO_P1_CAM5", 8.0f);
+    set_param(sp, "STEREO_P2_CAM5", 240.0f);
 	set_param(sp, "STEREO_LR_CAM5", 4.0f);
-	set_param(sp, "STEREO_TH_CAM5", 100.0f);
+    set_param(sp, "STEREO_TH_CAM5", 140.0f);
 
 	set_param(sp, "STEREO_P1_CAM7", 16.0f);
 	set_param(sp, "STEREO_P2_CAM7", 250.0f);
 	set_param(sp, "STEREO_LR_CAM7", 4.0f);
 	set_param(sp, "STEREO_TH_CAM7", 100.0f);
+
+    set_param(sp, "CALIB_GAIN", 4300.0f);
 
 	set_param(sp, "CAMERA_H_FLIP", float(userData->flip));
 	// last 4 bits activate the 4 camera pairs 0x01 = pair 1 only, 0x0F all 4 pairs
@@ -715,7 +727,7 @@ int main(int argc, char **argv)
 			/* Try to negotiate a 640x480 30 fps YUYV stream profile */
 			res = uvc_get_stream_ctrl_format_size(devh, &ctrl, /* result stored in ctrl */
 							      UVC_FRAME_FORMAT_YUYV, /* YUV 422, aka YUV 4:2:2. try _COMPRESSED */
-							      640, 480, 30 /* width, height, fps */
+                                  768, 480, 30 /* width, height, fps */
 							     );
 
 			if (res < 0) {

@@ -70,7 +70,7 @@ Eigen::Vector3d normalizePixel(const Eigen::Vector2d& x_kk, const double f[2], c
  */
 StereoHomography::StereoHomography(const uvc_ros_driver::FPGACalibration& calib_cam0,
                                    const uvc_ros_driver::FPGACalibration& calib_cam1)
-: image_width_(640),
+: image_width_(752),
   image_height_(480) {
   if (calib_cam0.projection_model_.type_ == uvc_ros_driver::CameraProjectionModel::ProjectionModelTypes::PINHOLE){
     const uvc_ros_driver::CameraProjectionModel* cam0_projection_model = calib_cam0.getProjectionModel();
