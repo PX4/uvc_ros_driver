@@ -314,12 +314,12 @@ void uvc_cb(uvc_frame_t *frame, void *user_ptr)
 	for (unsigned i = 0; i < msg_vio.imu.size(); i++) {
 		msg_vio.imu[i].header.stamp = stamp_time - elapsed +ros::Duration(elapsed * (double(i) / msg_vio.imu.size()));
 	}
-	
+
 	// temp container for the 2 images
 	uint8_t left[(frame_size-16*2*frame->height)/2];
 	uint8_t right[(frame_size-16*2*frame->height)/2];
 	// read the image data
-	//deinterleave(static_cast<unsigned char *>(frame->data),left, right, (size_t)frame_size, frame->width-16, frame->height);
+	deinterleave(static_cast<unsigned char *>(frame->data),left, right, (size_t)frame_size, frame->width-16, frame->height);
 
 	sensor_msgs::fillImage( msg_vio.left_image,
 				sensor_msgs::image_encodings::MONO8,
