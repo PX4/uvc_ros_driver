@@ -55,6 +55,8 @@
 
 #include "libuvc/libuvc.h"
 
+#include <ait_ros_messages/VioSensorMsg.h>
+
 #include <ros/ros.h>
 #include <ros/package.h>
 #include <std_msgs/String.h>
@@ -70,22 +72,30 @@
 namespace uvc {
 class uvcROSDriver {
  private:
-  bool device_initialized_;
-  bool enable_ait_vio_msg_;
-  bool flip_;
+  bool device_initialized_ = false;
+  bool enable_ait_vio_msg_ = false;
+  bool flip_ = false;
+  bool depth_map_ = false;
+  bool set_calibration_ = false;
 
   int n_cameras_;
+  int camera_config_;
 
-  static const double acc_scale_factor = 16384.0;
-  static const double gyr_scale_factor = 131.0;
-  static const double deg2rad = 2 * M_PI / 360.0;
+  // TODO: add other camera parameters
+  // float ....
+
+  double acc_scale_factor = 16384.0;
+  double gyr_scale_factor = 131.0;
+  double deg2rad = 2 * M_PI / 360.0;
 
   std::string path_to_config_;
 
-  std::vector<std::pair<int, int>> homography_mapping;
+  std::vector<std::pair<int, int>> homography_mapping_;
   std::vector<double> f_;
   std::vector<Eigen::Vector2d> p_;
   std::vector<Eigen::Matrix3d> H_;
+
+  CameraParameters camera_params_;
 
   Serial_Port sp_;
 
@@ -118,12 +128,71 @@ class uvcROSDriver {
 
   int16_t ShortSwap(int16_t s);
   uvc_error_t initAndOpenUvc();
+  int setParam(const std::string &name, float val);
+  void sendCameraParam(const int camera_number, const double f,
+                       const Eigen::Vector2d &p0, const float k1,
+                       const float k2, const float r1, const float r2,
+                       const Eigen::Matrix3d &H);
+  void setCalibration(CameraParameters camParams);
 
  public:
   uvcROSDriver(ros::NodeHandle nh) : nh_(nh), it_(nh_) {};
-  ~uvcROSDriver();
+  ~uvcROSDriver() {
+    sp_.close_serial();
+  };
   void initDevice();
   void startDevice();
+  // getter and setter
+  bool getUseOfAITMsgs() {
+    return enable_ait_vio_msg_;
+  };
+  void setUseOFAITMsgs(bool enable) {
+    enable_ait_vio_msg_ = enable;
+  };
+  bool getFlip() {
+    return flip_;
+  };
+  void setFlip(bool flip) {
+    flip_ = flip;
+  };
+  bool getUseOfDepthMap() {
+    return depth_map_;
+  };
+  void setUseOfDepthMap(bool depth_map) {
+    depth_map_ = depth_map;
+  };
+  bool getCalibrationParam() {
+    return set_calibration_;
+  };
+  void setCalibrationParam(bool calibration) {
+    set_calibration_ = calibration;
+  };
+  int getNumberOfCameras() {
+    return n_cameras_;
+  };
+  void setNumberOfCameras(int n_cameras) {
+    n_cameras_ = n_cameras;
+  };
+  int getCameraConfig() {
+    return camera_config_;
+  };
+  void setCameraConfig(int camera_config) {
+    camera_config_ = camera_config;
+  };
+  CameraParameters getCameraParams() {
+    return camera_params_;
+  };
+  void setCameraParams(const CameraParameters &camera_params) {
+    camera_params_ = camera_params;
+  };
+  void getHomographyMapping(
+      std::vector<std::pair<int, int>> &homography_mapping) {
+    homography_mapping = homography_mapping_;
+  };
+  void setHomographyMapping(
+      const std::vector<std::pair<int, int>> &homography_mapping) {
+    homography_mapping_ = homography_mapping;
+  };
 };
 } /* uvc_ros_driver */
 
