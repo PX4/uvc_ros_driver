@@ -80,6 +80,8 @@ class uvcROSDriver {
 
   int n_cameras_;
   int camera_config_;
+  int raw_width_ = 768;
+  int raw_height_ = 480;
 
   // TODO: add other camera parameters
   // float ....
@@ -106,6 +108,7 @@ class uvcROSDriver {
   // ros node handle
   ros::NodeHandle nh_;
   image_transport::ImageTransport it_;
+  ros::Time past_;
   // image publishers
   image_transport::Publisher cam_0_pub_;
   image_transport::Publisher cam_1_pub_;
@@ -129,16 +132,17 @@ class uvcROSDriver {
   int16_t ShortSwap(int16_t s);
   uvc_error_t initAndOpenUvc();
   int setParam(const std::string &name, float val);
-  void sendCameraParam(const int camera_number, const double f,
-                       const Eigen::Vector2d &p0, const float k1,
-                       const float k2, const float r1, const float r2,
-                       const Eigen::Matrix3d &H);
+  void sendCameraParam(const int camera_number, const double fx,
+                       const double fy, const Eigen::Vector2d &p0,
+                       const float k1, const float k2, const float r1,
+                       const float r2, const Eigen::Matrix3d &H);
   void setCalibration(CameraParameters camParams);
 
  public:
   uvcROSDriver(ros::NodeHandle nh) : nh_(nh), it_(nh_) {};
   ~uvcROSDriver() {
     sp_.close_serial();
+    uvc_close(devh_);
   };
   void initDevice();
   void startDevice();

@@ -148,14 +148,12 @@ void mySigintHandler(int sig) {
 }
 
 int main(int argc, char **argv) {
-
-  ros::init(argc, argv, "uvc_ros_driver", ros::init_options::NoSigintHandler);
+  ros::init(argc, argv, "uvc_ros_driver");
+  //,ros::init_options::NoSigintHandler);
   ros::NodeHandle nh("~");  // private nodehandle
 
   // signal(SIGINT, mySigintHandler);
   uvc::uvcROSDriver uvc_ros_driver(nh);
-
-  last_time = ros::Time::now();
 
   // get params from launch file
   bool flip, set_calibration, depth_map;
@@ -179,7 +177,7 @@ int main(int argc, char **argv) {
 
   std::vector<std::pair<int, int>> homography_mapping;
   homography_mapping.push_back(std::make_pair(0, 1));
-
+  // set parameter
   uvc_ros_driver.setNumberOfCameras(2);
   uvc_ros_driver.setFlip(flip);
   uvc_ros_driver.setCalibrationParam(set_calibration);
@@ -187,13 +185,13 @@ int main(int argc, char **argv) {
   uvc_ros_driver.setCameraConfig(camera_config);
   uvc_ros_driver.setCameraParams(camParams);
   uvc_ros_driver.setHomographyMapping(homography_mapping);
+  // initialize device
   uvc_ros_driver.initDevice();
+  // start device
+  uvc_ros_driver.startDevice();
+  // endless loop
+  ros::spin();
 
-  // // open serial port and write config to FPGA
-  // if (user_data.serialconfig) {
-  //   set_calibration(&user_data, camParams);
-  // }
-  //
   // uvc_context_t *ctx;
   // uvc_device_t *dev;
   // uvc_device_handle_t *devh;
