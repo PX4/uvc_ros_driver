@@ -65,8 +65,6 @@
 #include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/fill_image.h>
-#include <image_transport/image_transport.h>
-#include <image_transport/camera_publisher.h>
 
 #include <vector>
 #include <utility>  // std::pair
@@ -105,6 +103,8 @@ class uvcROSDriver {
   std::vector<Eigen::Vector2d> p_;
   std::vector<Eigen::Matrix3d> H_;
 
+  std::string node_name_;
+
   CameraParameters camera_params_;
   // serial port
   Serial_Port sp_;
@@ -115,21 +115,30 @@ class uvcROSDriver {
   uvc_stream_ctrl_t ctrl_;
   // ros node handle
   ros::NodeHandle nh_;
-  image_transport::ImageTransport it_;
   // time
   ros::Time past_;
   ros::Time frame_time_;
   // image publishers
-  image_transport::Publisher cam_0_pub_;
-  image_transport::Publisher cam_1_pub_;
-  image_transport::Publisher cam_2_pub_;
-  image_transport::Publisher cam_3_pub_;
-  image_transport::Publisher cam_4_pub_;
-  image_transport::Publisher cam_5_pub_;
-  image_transport::Publisher cam_6_pub_;
-  image_transport::Publisher cam_7_pub_;
-  image_transport::Publisher cam_8_pub_;
-  image_transport::Publisher cam_9_pub_;
+  ros::Publisher cam_0_pub_;
+  ros::Publisher cam_0_info_pub_;
+  ros::Publisher cam_1_pub_;
+  ros::Publisher cam_1_info_pub_;
+  ros::Publisher cam_2_pub_;
+  ros::Publisher cam_2_info_pub_;
+  ros::Publisher cam_3_pub_;
+  ros::Publisher cam_3_info_pub_;
+  ros::Publisher cam_4_pub_;
+  ros::Publisher cam_4_info_pub_;
+  ros::Publisher cam_5_pub_;
+  ros::Publisher cam_5_info_pub_;
+  ros::Publisher cam_6_pub_;
+  ros::Publisher cam_6_info_pub_;
+  ros::Publisher cam_7_pub_;
+  ros::Publisher cam_7_info_pub_;
+  ros::Publisher cam_8_pub_;
+  ros::Publisher cam_8_info_pub_;
+  ros::Publisher cam_9_pub_;
+  ros::Publisher cam_9_info_pub_;
   // vio publishers
   ros::Publisher stereo_vio_1_pub_;
   ros::Publisher stereo_vio_2_pub_;
@@ -139,16 +148,16 @@ class uvcROSDriver {
   // imu publisher
   ros::Publisher imu_publisher_;
   // camera info
-  sensor_msgs::CameraInfo info_cam_0;
-  sensor_msgs::CameraInfo info_cam_1;
-  sensor_msgs::CameraInfo info_cam_2;
-  sensor_msgs::CameraInfo info_cam_3;
-  sensor_msgs::CameraInfo info_cam_4;
-  sensor_msgs::CameraInfo info_cam_5;
-  sensor_msgs::CameraInfo info_cam_6;
-  sensor_msgs::CameraInfo info_cam_7;
-  sensor_msgs::CameraInfo info_cam_8;
-  sensor_msgs::CameraInfo info_cam_9;
+  sensor_msgs::CameraInfo info_cam_0_;
+  sensor_msgs::CameraInfo info_cam_1_;
+  sensor_msgs::CameraInfo info_cam_2_;
+  sensor_msgs::CameraInfo info_cam_3_;
+  sensor_msgs::CameraInfo info_cam_4_;
+  sensor_msgs::CameraInfo info_cam_5_;
+  sensor_msgs::CameraInfo info_cam_6_;
+  sensor_msgs::CameraInfo info_cam_7_;
+  sensor_msgs::CameraInfo info_cam_8_;
+  sensor_msgs::CameraInfo info_cam_9_;
 
   int16_t ShortSwap(int16_t s);
   uvc_error_t initAndOpenUvc();
@@ -161,9 +170,11 @@ class uvcROSDriver {
   inline void deinterleave(const uint8_t *mixed, uint8_t *array1,
                            uint8_t *array2, size_t mixedLength,
                            size_t imageWidth, size_t imageHeight);
+  inline void selectCameraInfo(int camera, sensor_msgs::CameraInfo **ci);
 
  public:
-  uvcROSDriver(ros::NodeHandle nh) : nh_(nh), it_(nh_) {};
+  uvcROSDriver(ros::NodeHandle nh)
+      : nh_(nh), node_name_(ros::this_node::getName()) {};
   ~uvcROSDriver();
   void uvc_cb(uvc_frame_t *frame);
   /**

@@ -61,6 +61,8 @@ uvcROSDriver::~uvcROSDriver() {
   uvc_exit(ctx_);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 void uvcROSDriver::initDevice() {
   // initialize serial port
   // sp_ = Serial_Port("/dev/ttyUSB0", 115200);
@@ -71,44 +73,74 @@ void uvcROSDriver::initDevice() {
     // initialize vio msgs publishers
     switch (n_cameras_) {
       case 10:
-        stereo_vio_5_pub_ =
-            nh_.advertise<ait_ros_messages::VioSensorMsg>("/vio_sensor_4", 5);
+        stereo_vio_5_pub_ = nh_.advertise<ait_ros_messages::VioSensorMsg>(
+            node_name_ + "/vio_sensor_4", 5);
       case 8:
-        stereo_vio_4_pub_ =
-            nh_.advertise<ait_ros_messages::VioSensorMsg>("/vio_sensor_3", 5);
+        stereo_vio_4_pub_ = nh_.advertise<ait_ros_messages::VioSensorMsg>(
+            node_name_ + "/vio_sensor_3", 5);
       case 6:
-        stereo_vio_3_pub_ =
-            nh_.advertise<ait_ros_messages::VioSensorMsg>("/vio_sensor_2", 5);
+        stereo_vio_3_pub_ = nh_.advertise<ait_ros_messages::VioSensorMsg>(
+            node_name_ + "/vio_sensor_2", 5);
       case 4:
-        stereo_vio_2_pub_ =
-            nh_.advertise<ait_ros_messages::VioSensorMsg>("/vio_sensor_1", 5);
+        stereo_vio_2_pub_ = nh_.advertise<ait_ros_messages::VioSensorMsg>(
+            node_name_ + "/vio_sensor_1", 5);
       default:
-        stereo_vio_1_pub_ =
-            nh_.advertise<ait_ros_messages::VioSensorMsg>("/vio_sensor_0", 5);
+        stereo_vio_1_pub_ = nh_.advertise<ait_ros_messages::VioSensorMsg>(
+            node_name_ + "/vio_sensor_0", 5);
     }
   } else {
     // initialize camera image publisher
     switch (n_cameras_) {
       case 10:
-        cam_9_pub_ = it_.advertise("cam_9", 5);
+        cam_9_pub_ = nh_.advertise<sensor_msgs::Image>(
+            node_name_ + "/cam_9/image_raw", 5);
+        cam_9_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
+            node_name_ + "/cam9/camera_info", 5);
       case 9:
-        cam_8_pub_ = it_.advertise("cam_8", 5);
+        cam_8_pub_ = nh_.advertise<sensor_msgs::Image>(
+            node_name_ + "/cam_8/image_raw", 5);
+        cam_8_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
+            node_name_ + "/cam8/camera_info", 5);
       case 8:
-        cam_7_pub_ = it_.advertise("cam_7", 5);
+        cam_7_pub_ = nh_.advertise<sensor_msgs::Image>(
+            node_name_ + "/cam_7/image_raw", 5);
+        cam_7_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
+            node_name_ + "/cam7/camera_info", 5);
       case 7:
-        cam_6_pub_ = it_.advertise("cam_6", 5);
+        cam_6_pub_ = nh_.advertise<sensor_msgs::Image>(
+            node_name_ + "/cam_6/image_raw", 5);
+        cam_6_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
+            node_name_ + "/cam6/camera_info", 5);
       case 6:
-        cam_5_pub_ = it_.advertise("cam_5", 5);
+        cam_5_pub_ = nh_.advertise<sensor_msgs::Image>(
+            node_name_ + "/cam_5/image_raw", 5);
+        cam_5_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
+            node_name_ + "/cam5/camera_info", 5);
       case 5:
-        cam_4_pub_ = it_.advertise("cam_4", 5);
+        cam_4_pub_ = nh_.advertise<sensor_msgs::Image>(
+            node_name_ + "/cam_4/image_raw", 5);
+        cam_4_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
+            node_name_ + "/cam4/camera_info", 5);
       case 4:
-        cam_3_pub_ = it_.advertise("cam_3", 5);
+        cam_3_pub_ = nh_.advertise<sensor_msgs::Image>(
+            node_name_ + "/cam_3/image_raw", 5);
+        cam_3_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
+            node_name_ + "/cam3/camera_info", 5);
       case 3:
-        cam_2_pub_ = it_.advertise("cam_2", 5);
+        cam_2_pub_ = nh_.advertise<sensor_msgs::Image>(
+            node_name_ + "/cam_2/image_raw", 5);
+        cam_2_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
+            node_name_ + "/cam2/camera_info", 5);
       case 2:
-        cam_1_pub_ = it_.advertise("cam_1", 5);
+        cam_1_pub_ = nh_.advertise<sensor_msgs::Image>(
+            node_name_ + "/cam_1/image_raw", 5);
+        cam_1_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
+            node_name_ + "/cam1/camera_info", 5);
       default:
-        cam_0_pub_ = it_.advertise("cam_0", 5);
+        cam_0_pub_ = nh_.advertise<sensor_msgs::Image>(
+            node_name_ + "/cam_0/image_raw", 5);
+        cam_0_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
+            node_name_ + "/cam0/camera_info", 5);
     }
   }
   // initialize imu msg publisher
@@ -122,6 +154,8 @@ void uvcROSDriver::initDevice() {
   // set flag for completed initializiation
   device_initialized_ = true;
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 void uvcROSDriver::startDevice() {
   if (device_initialized_) {
@@ -273,7 +307,8 @@ void uvcROSDriver::setCalibration(CameraParameters camParams) {
   f_.resize(n_cameras_);
   p_.resize(n_cameras_);
   H_.resize(n_cameras_);
-
+  // pointer at camera info
+  sensor_msgs::CameraInfo *ci;
   // TODO: reimplment this part for multiple stereo base line based systems
   if (set_calibration_) {
     for (size_t i = 0; i < homography_mapping_.size(); i++) {
@@ -297,11 +332,28 @@ void uvcROSDriver::setCalibration(CameraParameters camParams) {
       H_[indx.second] = H1;
     }
     // Set all parameters here
-    for (size_t i = 0; i < n_cameras_; i++) {
+    for (int i = 0; i < n_cameras_; i++) {
       sendCameraParam(i, f_[i], f_[i], p_[i], cams[i].projection_model_.k1_,
                       cams[i].projection_model_.k2_,
                       cams[i].projection_model_.r1_,
                       cams[i].projection_model_.r2_, H_[i]);
+      selectCameraInfo(i, &ci);
+      setCameraInfoIntrinsics(*ci, f_[i], f_[i], p_[i](0), p_[i](1));
+      setCameraInfoDistortionMdl(*ci,
+                                 uvc_ros_driver::ProjectionModelTypes::PINHOLE);
+      setCameraInfoDistortionParams(*ci, 0, 0, 0, 0, 0);
+    }
+  } else {
+    for (int i = 0; i < n_cameras_; i++) {
+      selectCameraInfo(i, &ci);
+      setCameraInfoIntrinsics(
+          *ci, camParams.FocalLength[i][0], camParams.FocalLength[i][1],
+          camParams.PrincipalPoint[i][0], camParams.PrincipalPoint[i][1]);
+      setCameraInfoDistortionMdl(*ci,
+                                 uvc_ros_driver::ProjectionModelTypes::PINHOLE);
+      setCameraInfoDistortionParams(
+          *ci, cams[i].projection_model_.k1_, cams[i].projection_model_.k2_,
+          cams[i].projection_model_.r1_, cams[i].projection_model_.r2_, 0);
     }
   }
   // TODO: implement with class variables
@@ -340,8 +392,10 @@ void uvcROSDriver::setCalibration(CameraParameters camParams) {
   setParam("SETCALIB", float(set_calibration_));
 
   setParam("STEREO_ENABLE", float(depth_map_));
-
-  // setParam("RESETMT9V034", 1.0f);
+  // std::cout << "Configuring cameras..." << std::endl;
+  setParam("RESETMT9V034", 1.0f);
+  // sleep(5);  // needed, fpga reconfigure cameras and restart time
+  // std::cout << "Configuration completed." << std::endl;
   // last 4 bits activate the 4 camera pairs 0x01 = pair 1 only, 0x0F all 4
   // pairs
   setParam("CAMERA_ENABLE", float(camera_config_));
@@ -382,9 +436,9 @@ uvc_error_t uvcROSDriver::initAndOpenUvc() {
     return res;
   }
   // ?????????
-  uvc_device_descriptor_t *desc;
-  uvc_get_device_descriptor(dev_, &desc);
-  uvc_free_device_descriptor(desc);
+  // uvc_device_descriptor_t *desc;
+  // uvc_get_device_descriptor(dev_, &desc);
+  // uvc_free_device_descriptor(desc);
 
   /* Try to negotiate a 640x480 30 fps YUYV stream profile */
   res = uvc_get_stream_ctrl_format_size(
@@ -410,6 +464,44 @@ int16_t uvcROSDriver::ShortSwap(int16_t s) {
   b1 = s & 255;
   b2 = (s >> 8) & 255;
   return (b1 << 8) + b2;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+inline void uvcROSDriver::selectCameraInfo(int camera,
+                                           sensor_msgs::CameraInfo **ci) {
+  switch (camera) {
+    case 0:
+      *ci = &info_cam_0_;
+      break;
+    case 1:
+      *ci = &info_cam_1_;
+      break;
+    case 2:
+      *ci = &info_cam_2_;
+      break;
+    case 3:
+      *ci = &info_cam_3_;
+      break;
+    case 4:
+      *ci = &info_cam_4_;
+      break;
+    case 5:
+      *ci = &info_cam_5_;
+      break;
+    case 6:
+      *ci = &info_cam_6_;
+      break;
+    case 7:
+      *ci = &info_cam_7_;
+      break;
+    case 8:
+      *ci = &info_cam_8_;
+      break;
+    case 9:
+      *ci = &info_cam_9_;
+      break;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -453,13 +545,14 @@ inline void uvcROSDriver::deinterleave(const uint8_t *mixed, uint8_t *array1,
   quick processing you need, or have it put the frame into your application's
   input queue.If this function takes too long, you'll start losing frames. */
 void uvcROSDriver::uvc_cb(uvc_frame_t *frame) {
+  // check if evrything ok
   if (!ros::ok()) {
     return;
   }
+  // flag
   uvc_cb_flag_ = true;
   ros::Time now = ros::Time::now();
   ait_ros_messages::VioSensorMsg msg_vio;
-  std::vector<sensor_msgs::Imu> imu_vector;
   sensor_msgs::Imu msg_imu;
 
   unsigned frame_size = frame->height * frame->width * 2;
@@ -527,9 +620,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame) {
         msg_imu.angular_velocity.z = -gyr_z;
       }
 
-      // msg_vio.imu.push_back(msg_imu);
-
-      imu_vector.push_back(msg_imu);
+      msg_vio.imu.push_back(msg_imu);
 
       // time stamp for imu msgs wrong?
       msg_imu.header.stamp =
@@ -553,12 +644,12 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame) {
   printf("camera id: %d   ", cam_id);
   printf("time elapsed: %f   ", elapsed.toSec());
   printf("framerate: %f   ", 1.0f / elapsed.toSec());
-  printf("%lu imu messages\n", imu_vector.size());
+  printf("%lu imu messages\n", msg_vio.imu.size());
 
-  for (unsigned i = 0; i < imu_vector.size(); i++) {
-    imu_vector[i].header.stamp =
+  for (unsigned i = 0; i < msg_vio.imu.size(); i++) {
+    msg_vio.imu[i].header.stamp =
         now - elapsed +
-        ros::Duration(elapsed * (double(i) / imu_vector.size()));
+        ros::Duration(elapsed * (double(i) / msg_vio.imu.size()));
   }
 
   // publish imu msgs here instead?
@@ -588,9 +679,6 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame) {
 
   msg_vio.right_image.header.stamp = now;
 
-  // copy imu data
-  msg_vio.imu = imu_vector;
-
   // publish data
   if (cam_id == 0) {  // select_cam = 0 + 1
     frame_time_ = now;
@@ -604,7 +692,8 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame) {
         cam_0_pub_.publish(msg_vio.left_image);
         cam_1_pub_.publish(msg_vio.right_image);
         // publish camera info
-        // TODO
+        cam_0_info_pub_.publish(info_cam_0_);
+        cam_1_info_pub_.publish(info_cam_1_);
       }
     }
   }
