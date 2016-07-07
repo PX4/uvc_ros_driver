@@ -34,79 +34,13 @@
  * uvc_ros_driver_node.cpp
  *
  *  Created on: Mar 11, 2016
- *      Author: nicolas, christoph
+ *      Author: nicolas, christoph, simone
  *
- *  The code below is based on the example provided at
- *https://int80k.com/libuvc/doc/
  */
 
 #include "uvc_ros_driver.h"
-
-static const double acc_scale_factor = 16384.0;
-static const double gyr_scale_factor = 131.0;
-static const double deg2rad = 2 * M_PI / 360.0;
-
 // declare helper function
 CameraParameters loadCustomCameraCalibration(const std::string calib_path);
-
-// static double acc_x_prev, acc_y_prev, acc_z_prev, gyr_x_prev, gyr_y_prev,
-// gyr_z_prev;
-static ros::Time last_time;
-
-bool request_shutdown_flag = false;
-bool uvc_cb_flag = false;
-int frameCounter = 0;
-int calibrationMode = 0;
-ros::Time frame_time;
-
-// struct holding all data needed in the callback
-struct UserData {
-  ros::Publisher image_publisher_1;
-  ros::Publisher image_publisher_2;
-  ros::Publisher image_publisher_3;
-  ros::Publisher image_publisher_4;
-  ros::Publisher imu_publisher;
-  bool flip;
-  bool serialconfig;
-  bool setCalibration;
-  bool depthMap;
-  int cameraConfig;
-};
-
-inline void deinterleave(const uint8_t *mixed, uint8_t *array1, uint8_t *array2,
-                         size_t mixedLength, size_t imageWidth,
-                         size_t imageHeight) {
-// TODO: modify ARM NEON instruction to support imageWidth
-#if defined __ARM_NEON__
-  size_t vectors = mixedLength / 32;
-  mixedLength %= 32;
-
-  while (vectors-- > 0) {
-    const uint8x16_t src0 = vld1q_u8(mixed);
-    const uint8x16_t src1 = vld1q_u8(mixed + 16);
-    const uint8x16x2_t dst = vuzpq_u8(src0, src1);
-    vst1q_u8(array1, dst.val[0]);
-    vst1q_u8(array2, dst.val[1]);
-    mixed += 32;
-    array1 += 16;
-    array2 += 16;
-  }
-
-#endif
-  int i = 0;
-  int c = 0;
-
-  while (c < imageWidth * imageHeight) {
-    array1[c] = mixed[2 * i];
-    array2[c] = mixed[2 * i + 1];
-    i++;
-    c++;
-
-    if (c % (imageWidth) == 0) {
-      i += 16;
-    }
-  }
-}
 
 // void writeFocalLengthToYaml() {
 //   std::string package_path = ros::package::getPath("uvc_ros_driver");
@@ -141,17 +75,10 @@ CameraParameters loadCustomCameraCalibration(const std::string calib_path) {
   }
 }
 
-void mySigintHandler(int sig) {
-  request_shutdown_flag = true;
-  uvc_cb_flag = true;
-}
-
 int main(int argc, char **argv) {
   ros::init(argc, argv, "uvc_ros_driver");
-  //,ros::init_options::NoSigintHandler);
   ros::NodeHandle nh("~");  // private nodehandle
 
-  // signal(SIGINT, mySigintHandler);
   uvc::uvcROSDriver uvc_ros_driver(nh);
 
   // get params from launch file
@@ -177,7 +104,10 @@ int main(int argc, char **argv) {
   std::vector<std::pair<int, int>> homography_mapping;
   homography_mapping.push_back(std::make_pair(0, 1));
   // set parameter
+  // TODO: have a parameter for the number of cameras
   uvc_ros_driver.setNumberOfCameras(2);
+  // TODO: have a parameter for the use of ait vio msgs instead of normal image
+  uvc_ros_driver.setUseOFAITMsgs(false);
   uvc_ros_driver.setFlip(flip);
   uvc_ros_driver.setCalibrationParam(set_calibration);
   uvc_ros_driver.setUseOfDepthMap(depth_map);

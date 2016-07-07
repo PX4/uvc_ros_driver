@@ -33,7 +33,7 @@
 /*
  * uvc_ros_driver.cpp
  *
- *  Created on: Mar 11, 2016
+ *  Created on: Jul 5, 2016
  *      Author: nicolas, christoph, simone
  *
  *  The code below is based on the example provided at
