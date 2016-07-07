@@ -52,6 +52,7 @@
 #include "stereo_homography.h"
 #include "fpga_calibration.h"
 #include "calib_yaml_interface.h"
+#include "camera_info_helper.h"
 
 #include "libuvc/libuvc.h"
 
@@ -67,6 +68,8 @@
 #include <image_transport/image_transport.h>
 #include <image_transport/camera_publisher.h>
 
+#include <vector>
+#include <utility>  // std::pair
 #include <string>
 
 namespace uvc {
@@ -77,11 +80,17 @@ class uvcROSDriver {
   bool flip_ = false;
   bool depth_map_ = false;
   bool set_calibration_ = false;
+  bool uvc_cb_flag_ = false;
 
-  int n_cameras_;
+  int n_cameras_ = 2;
   int camera_config_;
   int raw_width_ = 768;
   int raw_height_ = 480;
+  int width_ = raw_width_ - 16;
+  int height_ = raw_height_;
+  int frameCounter_ = 0;
+  int modulo_ = 1;
+  int calibration_mode_ = 0;
 
   // TODO: add other camera parameters
   // float ....
@@ -90,17 +99,16 @@ class uvcROSDriver {
   double gyr_scale_factor = 131.0;
   double deg2rad = 2 * M_PI / 360.0;
 
-  std::string path_to_config_;
-
+  // homography variables
   std::vector<std::pair<int, int>> homography_mapping_;
   std::vector<double> f_;
   std::vector<Eigen::Vector2d> p_;
   std::vector<Eigen::Matrix3d> H_;
 
   CameraParameters camera_params_;
-
+  // serial port
   Serial_Port sp_;
-
+  // uvc
   uvc_context_t *ctx_;
   uvc_device_t *dev_;
   uvc_device_handle_t *devh_;
@@ -108,7 +116,9 @@ class uvcROSDriver {
   // ros node handle
   ros::NodeHandle nh_;
   image_transport::ImageTransport it_;
+  // time
   ros::Time past_;
+  ros::Time frame_time_;
   // image publishers
   image_transport::Publisher cam_0_pub_;
   image_transport::Publisher cam_1_pub_;
@@ -128,6 +138,17 @@ class uvcROSDriver {
   ros::Publisher stereo_vio_5_pub_;
   // imu publisher
   ros::Publisher imu_publisher_;
+  // camera info
+  sensor_msgs::CameraInfo info_cam_0;
+  sensor_msgs::CameraInfo info_cam_1;
+  sensor_msgs::CameraInfo info_cam_2;
+  sensor_msgs::CameraInfo info_cam_3;
+  sensor_msgs::CameraInfo info_cam_4;
+  sensor_msgs::CameraInfo info_cam_5;
+  sensor_msgs::CameraInfo info_cam_6;
+  sensor_msgs::CameraInfo info_cam_7;
+  sensor_msgs::CameraInfo info_cam_8;
+  sensor_msgs::CameraInfo info_cam_9;
 
   int16_t ShortSwap(int16_t s);
   uvc_error_t initAndOpenUvc();
@@ -137,16 +158,25 @@ class uvcROSDriver {
                        const float k1, const float k2, const float r1,
                        const float r2, const Eigen::Matrix3d &H);
   void setCalibration(CameraParameters camParams);
+  inline void deinterleave(const uint8_t *mixed, uint8_t *array1,
+                           uint8_t *array2, size_t mixedLength,
+                           size_t imageWidth, size_t imageHeight);
 
  public:
   uvcROSDriver(ros::NodeHandle nh) : nh_(nh), it_(nh_) {};
-  ~uvcROSDriver() {
-    sp_.close_serial();
-    uvc_close(devh_);
-  };
+  ~uvcROSDriver();
+  void uvc_cb(uvc_frame_t *frame);
+  /**
+   * initialize device, set up topic publishers and compute homography for
+   * the
+   * cameras
+   */
   void initDevice();
+  /**
+   * setup uvc stream
+   */
   void startDevice();
-  // getter and setter
+  // getter and setter for different internal variables
   bool getUseOfAITMsgs() {
     return enable_ait_vio_msg_;
   };
@@ -197,7 +227,18 @@ class uvcROSDriver {
       const std::vector<std::pair<int, int>> &homography_mapping) {
     homography_mapping_ = homography_mapping;
   };
+  int getCalibrationMode() {
+    return calibration_mode_;
+  };
+  void setCalibrationMode(int calibration_mode) {
+    calibration_mode_ = calibration_mode;
+    // update modulo_ varable also
+    if (calibration_mode != 0) {
+      modulo_ = 12 / calibration_mode;
+    }
+  };
 };
-} /* uvc_ros_driver */
+
+} /* uvc */
 
 #endif /* end of include guard: __UVC_ROS_DRIVER_H__ */

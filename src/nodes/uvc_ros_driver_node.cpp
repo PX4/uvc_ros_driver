@@ -51,7 +51,6 @@ CameraParameters loadCustomCameraCalibration(const std::string calib_path);
 
 // static double acc_x_prev, acc_y_prev, acc_z_prev, gyr_x_prev, gyr_y_prev,
 // gyr_z_prev;
-static uint16_t count_prev;
 static ros::Time last_time;
 
 bool request_shutdown_flag = false;
@@ -156,22 +155,22 @@ int main(int argc, char **argv) {
   uvc::uvcROSDriver uvc_ros_driver(nh);
 
   // get params from launch file
-  bool flip, set_calibration, depth_map;
+  bool flip, set_calibration, depth_map, calibration_mode;
   int camera_config;
-  std::string calibrationFileName;
+  std::string calibration_file_name;
   // TODO: check if parameter exist
   nh.getParam("flip", flip);
   nh.getParam("setCalibration", set_calibration);
   nh.getParam("depthMap", depth_map);
   nh.getParam("cameraConfig", camera_config);
-  nh.getParam("cameraConfigFile", calibrationFileName);
-  nh.getParam("calibrationMode", calibrationMode);
+  nh.getParam("cameraConfigFile", calibration_file_name);
+  nh.getParam("calibrationMode", calibration_mode);
 
   // read yaml calibration file from launch file parameter, file muss be located
   // in the calib folder
   std::string package_path = ros::package::getPath("uvc_ros_driver");
   std::string calibrationFile_Path =
-      package_path + "/calib/" + calibrationFileName;
+      package_path + "/calib/" + calibration_file_name;
   CameraParameters camParams =
       loadCustomCameraCalibration(calibrationFile_Path);
 
@@ -183,6 +182,7 @@ int main(int argc, char **argv) {
   uvc_ros_driver.setCalibrationParam(set_calibration);
   uvc_ros_driver.setUseOfDepthMap(depth_map);
   uvc_ros_driver.setCameraConfig(camera_config);
+  uvc_ros_driver.setCalibrationMode(calibration_mode);
   uvc_ros_driver.setCameraParams(camParams);
   uvc_ros_driver.setHomographyMapping(homography_mapping);
   // initialize device
@@ -191,125 +191,5 @@ int main(int argc, char **argv) {
   uvc_ros_driver.startDevice();
   // endless loop
   ros::spin();
-
-  // uvc_context_t *ctx;
-  // uvc_device_t *dev;
-  // uvc_device_handle_t *devh;
-  // uvc_stream_ctrl_t ctrl;
-  // uvc_error_t res;
-  //
-  // /* Initialize a UVC service context. Libuvc will set up its own libusb
-  //  * context. Replace NULL with a libusb_context pointer to run libuvc
-  //  * from an existing libusb context. */
-  // res = uvc_init(&ctx, NULL);
-  //
-  // if (res < 0) {
-  //   uvc_perror(res, "uvc_init");
-  //   return res;
-  // }
-  //
-  // /* Locates the first attached UVC device, stores in dev */
-  // res = uvc_find_device(ctx, &dev, 0x04b4, 0, NULL); /* filter devices:
-  //                                                       vendor_id,
-  // product_id,
-  //                                                       "serial_num" */
-  //
-  // if (res < 0) {
-  //   uvc_perror(res, "uvc_find_device"); /* no devices found */
-  //   ROS_ERROR("No devices found");
-  //
-  // } else {
-  //   ROS_INFO("Device found");
-  //
-  //   /* Try to open the device: requires exclusive access */
-  //   res = uvc_open(dev, &devh);
-  //
-  //   if (res < 0) {
-  //     uvc_perror(res, "uvc_open"); /* unable to open device */
-  //     ROS_ERROR("Unable to open the device");
-  //
-  //   } else {
-  //     ROS_INFO("Device opened");
-  //
-  //     uvc_device_descriptor_t *desc;
-  //     uvc_get_device_descriptor(dev, &desc);
-  //     std::stringstream serial_nr_ss;
-  //     serial_nr_ss << desc->idVendor << "_" << desc->idProduct
-  //                  << "_TODO_SERIAL_NR";
-  //     uvc_free_device_descriptor(desc);
-  //     std_msgs::String str_msg;
-  //     str_msg.data = serial_nr_ss.str();
-  //     serial_nr_pub.publish(str_msg);
-  //
-  //     /* Try to negotiate a 640x480 30 fps YUYV stream profile */
-  //     res = uvc_get_stream_ctrl_format_size(
-  //         devh, &ctrl,           /* result stored in ctrl */
-  //         UVC_FRAME_FORMAT_YUYV, /* YUV 422, aka YUV 4:2:2. try _COMPRESSED
-  // */
-  //         768, 480, 30           /* width, height, fps */
-  //         );
-  //
-  //     if (res < 0) {
-  //       uvc_perror(res,
-  //                  "get_mode"); /* device doesn't provide a matching stream
-  // */
-  //       ROS_ERROR("Device doesn't provide a matching stream");
-  //
-  //     } else {
-  //
-  //       /*if (!repeatedStart(devh, ctrl)) {
-  //               ROS_ERROR("Failed to get stream from the camera. Try
-  //       powercycling the device");
-  //               return -1;
-  //       }*/
-  //
-  //       /* Start the video stream. The library will call user function cb:
-  //        *   cb(frame, (void*) vio_sensor_pub)
-  //        */
-  //       res = uvc_start_streaming(devh, &ctrl, uvc_cb, &user_data, 0);
-  //       int sleepTime_us = 200000;
-  //       usleep(sleepTime_us);
-  //       while (!uvc_cb_flag) {
-  //         printf("retry start streaming...\n");
-  //         uvc_stop_streaming(devh);
-  //         res = uvc_start_streaming(devh, &ctrl, uvc_cb, &user_data, 0);
-  //         usleep(sleepTime_us);
-  //       }
-  //
-  //       if (res < 0) {
-  //         uvc_perror(res, "start_streaming"); /* unable to start stream */
-  //         ROS_ERROR("Failed to start stream");
-  //
-  //       } else {
-  //
-  //         while (!request_shutdown_flag) {
-  //           ros::spinOnce();
-  //         }
-  //
-  //         set_param(sp, "CAMERA_ENABLE", float(0));
-  //         ROS_INFO("Wait Sensor Shutdown.");
-  //         usleep(1500000);
-  //         ROS_INFO("Sensor Shutdown.");
-  //         uvc_stop_streaming(devh);
-  //         ROS_INFO("Done streaming.");
-  //         ros::shutdown();
-  //       }
-  //     }
-  //
-  //     /* Release our handle on the device */
-  //     sp.close_serial();
-  //     uvc_close(devh);
-  //     ROS_INFO("Device closed");
-  //   }
-  //
-  //   /* Release the device descriptor */
-  //   uvc_unref_device(dev);
-  // }
-  //
-  // /* Close the UVC context. This closes and cleans up any existing device
-  //  * handles,
-  //  * and it closes the libusb context if one was not provided. */
-  // uvc_exit(ctx);
-  // ROS_INFO("UVC exited");
   return 0;
 }

@@ -44,6 +44,23 @@
 
 namespace uvc {
 
+static void callback(uvc_frame *frame, void *arg) {
+  uvcROSDriver *obj = (uvcROSDriver *)arg;
+  obj->uvc_cb(frame);
+}
+
+uvcROSDriver::~uvcROSDriver() {
+  setParam("CAMERA_ENABLE", 0.0f);
+  uvc_stop_streaming(devh_);
+  // close serial port
+  sp_.close_serial();
+  // close uvc device
+  uvc_close(devh_);
+  ROS_INFO("Device closed");
+  uvc_unref_device(dev_);
+  uvc_exit(ctx_);
+}
+
 void uvcROSDriver::initDevice() {
   // initialize serial port
   // sp_ = Serial_Port("/dev/ttyUSB0", 115200);
@@ -112,9 +129,15 @@ void uvcROSDriver::startDevice() {
     uvc_error_t res = initAndOpenUvc();
     // start stream
     past_ = ros::Time::now();
-    res = uvc_start_streaming(devh_, &ctrl_, uvc_cb, NULL, 0);
+    res = uvc_start_streaming(devh_, &ctrl_, &callback, this, 0);
     setParam("CAMERA_ENABLE", float(camera_config_));
-
+    while (!uvc_cb_flag_ && ros::ok()) {
+      printf("retry start streaming...\n");
+      uvc_stop_streaming(devh_);
+      res = uvc_start_streaming(devh_, &ctrl_, &callback, this, 0);
+      usleep(200000);
+      // std::cout << "res: " << res << std::endl;
+    }
   } else {
     ROS_ERROR("Device not initialized!");
   }
@@ -251,8 +274,7 @@ void uvcROSDriver::setCalibration(CameraParameters camParams) {
   p_.resize(n_cameras_);
   H_.resize(n_cameras_);
 
-  // TODO: reimplment this part for multiple stereo base line based on for ex.
-  // camera 0
+  // TODO: reimplment this part for multiple stereo base line based systems
   if (set_calibration_) {
     for (size_t i = 0; i < homography_mapping_.size(); i++) {
       // temp structures
@@ -309,9 +331,6 @@ void uvcROSDriver::setCalibration(CameraParameters camParams) {
   setParam("CALIB_GAIN", 4300.0f);
 
   setParam("CAMERA_H_FLIP", float(flip_));
-  // last 4 bits activate the 4 camera pairs 0x01 = pair 1 only, 0x0F all 4
-  // pairs
-  setParam("CAMERA_ENABLE", 0.0f);
 
   if (set_calibration_)
     setParam("RESETCALIB", 0.0f);
@@ -322,7 +341,10 @@ void uvcROSDriver::setCalibration(CameraParameters camParams) {
 
   setParam("STEREO_ENABLE", float(depth_map_));
 
-  setParam("RESETMT9V034", 1.0f);
+  // setParam("RESETMT9V034", 1.0f);
+  // last 4 bits activate the 4 camera pairs 0x01 = pair 1 only, 0x0F all 4
+  // pairs
+  setParam("CAMERA_ENABLE", float(camera_config_));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -414,14 +436,12 @@ inline void uvcROSDriver::deinterleave(const uint8_t *mixed, uint8_t *array1,
 #endif
   int i = 0;
   int c = 0;
-  // TODO: change with for loop
   while (c < imageWidth * imageHeight) {
     array1[c] = mixed[2 * i];
     array2[c] = mixed[2 * i + 1];
     i++;
     c++;
-
-    if (c % (imageWidth) == 0) {
+    if ((c % imageWidth) == 0) {
       i += 16;
     }
   }
@@ -432,38 +452,24 @@ inline void uvcROSDriver::deinterleave(const uint8_t *mixed, uint8_t *array1,
 /* This callback function runs once per frame. Use it to perform any
   quick processing you need, or have it put the frame into your application's
   input queue.If this function takes too long, you'll start losing frames. */
-void uvcROSDriver::uvc_cb(uvc_frame_t *frame, void *user_ptr) {
-  // uvc_cb_flag = true;
-
-  if (request_shutdown_flag) {
+void uvcROSDriver::uvc_cb(uvc_frame_t *frame) {
+  if (!ros::ok()) {
     return;
   }
-
+  uvc_cb_flag_ = true;
+  ros::Time now = ros::Time::now();
   ait_ros_messages::VioSensorMsg msg_vio;
+  std::vector<sensor_msgs::Imu> imu_vector;
   sensor_msgs::Imu msg_imu;
-
-  msg_vio.header.stamp = ros::Time::now();
-
-  msg_vio.left_image.header.stamp = msg_vio.header.stamp;
-  msg_vio.right_image.header.stamp = msg_vio.header.stamp;
-
-  // msg_vio.left_image.height = frame->height;
-  // msg_vio.left_image.width = frame->width - 16;
-  // msg_vio.left_image.encoding = sensor_msgs::image_encodings::MONO8;
-  // msg_vio.left_image.step = frame->width - 16;
-  //
-  // msg_vio.right_image.height = frame->height;
-  // msg_vio.right_image.width = frame->width - 16;
-  // msg_vio.right_image.encoding = sensor_msgs::image_encodings::MONO8;
-  // msg_vio.right_image.step = frame->width - 16;
 
   unsigned frame_size = frame->height * frame->width * 2;
 
   // read the IMU data
   int16_t zero = 0;
   uint16_t cam_id = 0;
+  static uint16_t count_prev;
 
-  for (unsigned i = 0; i < frame->height; i += 1) {
+  for (unsigned i = 0; i < frame->height; i++) {
 
     uint16_t count = ShortSwap(static_cast<uint16_t *>(
         frame->data)[int((i + 1) * frame->width - 8 + 0)]);
@@ -504,7 +510,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame, void *user_ptr) {
       if (flip_) {
         msg_imu.linear_acceleration.x = acc_y;
         msg_imu.linear_acceleration.y = acc_x;
-        m sg_imu.linear_acceleration.z = -acc_z;
+        msg_imu.linear_acceleration.z = -acc_z;
 
         msg_imu.angular_velocity.x = gyr_y;
         msg_imu.angular_velocity.y = gyr_x;
@@ -521,16 +527,19 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame, void *user_ptr) {
         msg_imu.angular_velocity.z = -gyr_z;
       }
 
-      msg_vio.imu.push_back(msg_imu);
+      // msg_vio.imu.push_back(msg_imu);
 
+      imu_vector.push_back(msg_imu);
+
+      // time stamp for imu msgs wrong?
       msg_imu.header.stamp =
-          past_ + (msg_vio.header.stamp - past_) * (double(i) / frame->height);
+          past_ + (now - past_) * (double(i) / frame->height);
 
       imu_publisher_.publish(msg_imu);
 
       count_prev = count;
     }
-
+    // set imu values in image to 0
     for (unsigned j = 0; j < 8; j++) {
       static_cast<int16_t *>(frame->data)[int((i + 1) * frame->width - 8 + j)] =
           zero;
@@ -538,26 +547,26 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame, void *user_ptr) {
   }
 
   // linearly interpolate the time stamps of the imu messages
-  ros::Duration elapsed = msg_vio.header.stamp - past_;
-  past_ = msg_vio.header.stamp;
-
-  ros::Time stamp_time = msg_vio.header.stamp;
+  ros::Duration elapsed = now - past_;
+  past_ = now;
 
   printf("camera id: %d   ", cam_id);
   printf("time elapsed: %f   ", elapsed.toSec());
   printf("framerate: %f   ", 1.0f / elapsed.toSec());
-  printf("%lu imu messages\n", msg_vio.imu.size());
+  printf("%lu imu messages\n", imu_vector.size());
 
-  for (unsigned i = 0; i < msg_vio.imu.size(); i++) {
-    msg_vio.imu[i].header.stamp =
-        stamp_time - elapsed +
-        ros::Duration(elapsed * (double(i) / msg_vio.imu.size()));
+  for (unsigned i = 0; i < imu_vector.size(); i++) {
+    imu_vector[i].header.stamp =
+        now - elapsed +
+        ros::Duration(elapsed * (double(i) / imu_vector.size()));
   }
+
+  // publish imu msgs here instead?
 
   // temp container for the 2 images
   uint8_t left[(frame_size - 16 * 2 * frame->height) / 2];
   uint8_t right[(frame_size - 16 * 2 * frame->height) / 2];
-  // read the image data
+  // read the image data and separate the 2 images
   deinterleave(static_cast<unsigned char *>(frame->data), left, right,
                (size_t)frame_size, frame->width - 16, frame->height);
 
@@ -568,6 +577,8 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame, void *user_ptr) {
                          frame->width - 16,  // stepSize
                          left);
 
+  msg_vio.left_image.header.stamp = now;
+
   sensor_msgs::fillImage(msg_vio.right_image,
                          sensor_msgs::image_encodings::MONO8,
                          frame->height,      // height
@@ -575,37 +586,92 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame, void *user_ptr) {
                          frame->width - 16,  // stepSize
                          right);
 
+  msg_vio.right_image.header.stamp = now;
+
+  // copy imu data
+  msg_vio.imu = imu_vector;
+
   // publish data
-  int modulo = 1;  // increase to drop fps for calibration
-
-  if (calibrationMode != 0) {
-    modulo = 12 / calibrationMode;
-  }
-
   if (cam_id == 0) {  // select_cam = 0 + 1
-    frame_time = msg_vio.header.stamp;
-    frameCounter++;
+    frame_time_ = now;
+    frameCounter_++;
 
-    if (frameCounter % modulo == 0) {
-      user_data->image_publisher_1.publish(msg_vio);
+    if (frameCounter_ % modulo_ == 0) {
+      if (enable_ait_vio_msg_) {
+        stereo_vio_1_pub_.publish(msg_vio);
+      } else {
+        // publish images and camera info
+        cam_0_pub_.publish(msg_vio.left_image);
+        cam_1_pub_.publish(msg_vio.right_image);
+        // publish camera info
+        // TODO
+      }
     }
   }
 
-  if (cam_id == 1 && frameCounter % modulo == 0) {  // select_cam = 2 + 3
-    msg_vio.header.stamp = frame_time;
-    user_data->image_publisher_2.publish(msg_vio);
+  if (cam_id == 1 && frameCounter_ % modulo_ == 0) {  // select_cam = 2 + 3
+    // FPGA can only send 2 images at time but all of them are took at the same
+    // time, so the image time stamp should be set to the first camera pair
+    msg_vio.header.stamp = frame_time_;
+    msg_vio.left_image.header.stamp = frame_time_;
+    msg_vio.left_image.header.stamp = frame_time_;
+    if (enable_ait_vio_msg_) {
+      stereo_vio_2_pub_.publish(msg_vio);
+    } else {
+      // publish images
+      cam_2_pub_.publish(msg_vio.left_image);
+      cam_3_pub_.publish(msg_vio.right_image);
+      // publish camera info
+      // TODO
+    }
   }
 
-  if (cam_id == 2 && frameCounter % modulo == 0) {  // select_cam = 4 + 5
-    msg_vio.header.stamp = frame_time;
-    user_data->image_publisher_3.publish(msg_vio);
+  if (cam_id == 2 && frameCounter_ % modulo_ == 0) {  // select_cam = 4 + 5
+    msg_vio.header.stamp = frame_time_;
+    msg_vio.left_image.header.stamp = frame_time_;
+    msg_vio.left_image.header.stamp = frame_time_;
+    if (enable_ait_vio_msg_) {
+      stereo_vio_3_pub_.publish(msg_vio);
+    } else {
+      // publish images
+      cam_4_pub_.publish(msg_vio.left_image);
+      cam_5_pub_.publish(msg_vio.right_image);
+      // publish camera info
+      // TODO
+    }
   }
 
-  if (cam_id == 3 && frameCounter % modulo == 0) {  // select_cam = 6 + 7
-    msg_vio.header.stamp = frame_time;
-    user_data->image_publisher_4.publish(msg_vio);
+  if (cam_id == 3 && frameCounter_ % modulo_ == 0) {  // select_cam = 6 + 7
+    msg_vio.header.stamp = frame_time_;
+    msg_vio.left_image.header.stamp = frame_time_;
+    msg_vio.left_image.header.stamp = frame_time_;
+    if (enable_ait_vio_msg_) {
+      stereo_vio_4_pub_.publish(msg_vio);
+    } else {
+      // publish images
+      cam_6_pub_.publish(msg_vio.left_image);
+      cam_7_pub_.publish(msg_vio.right_image);
+      // publish camera info
+      // TODO
+    }
   }
 
+  if (cam_id == 4 && frameCounter_ % modulo_ == 0) {  // select_cam = 8 + 9
+    msg_vio.header.stamp = frame_time_;
+    msg_vio.left_image.header.stamp = frame_time_;
+    msg_vio.left_image.header.stamp = frame_time_;
+    if (enable_ait_vio_msg_) {
+      stereo_vio_5_pub_.publish(msg_vio);
+    } else {
+      // publish images
+      cam_8_pub_.publish(msg_vio.left_image);
+      cam_9_pub_.publish(msg_vio.right_image);
+      // publish camera info
+      // TODO
+    }
+  }
+
+  // realy needed?
   msg_vio.left_image.data.clear();
   msg_vio.right_image.data.clear();
   msg_vio.imu.clear();
