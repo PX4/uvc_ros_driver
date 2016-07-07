@@ -6,8 +6,8 @@
 #include <sensor_msgs/distortion_models.h>
 #include <string>
 
-void setCameraInfoIntrinsics(sensor_msgs::CameraInfo& ci, double fx, double fy,
-                             double cx, double cy) {
+inline void setCameraInfoIntrinsics(sensor_msgs::CameraInfo& ci, double fx,
+                                    double fy, double cx, double cy) {
   ci.K[0] = fx;
   ci.K[1] = 0;
   ci.K[2] = cx;
@@ -19,8 +19,8 @@ void setCameraInfoIntrinsics(sensor_msgs::CameraInfo& ci, double fx, double fy,
   ci.K[8] = 1;
 }
 
-void setCameraInfoDistortionMdl(sensor_msgs::CameraInfo& ci,
-                                uvc_ros_driver::ProjectionModelTypes pmt) {
+inline void setCameraInfoDistortionMdl(
+    sensor_msgs::CameraInfo& ci, uvc_ros_driver::ProjectionModelTypes pmt) {
   std::string model;
   switch (pmt) {
     case uvc_ros_driver::RADTAN:
@@ -34,8 +34,11 @@ void setCameraInfoDistortionMdl(sensor_msgs::CameraInfo& ci,
   ci.distortion_model = model;
 }
 
-void setCameraInfoDistortionParams(sensor_msgs::CameraInfo& ci, double k1,
-                                   double k2, double t1, double t2, double k3) {
+inline void setCameraInfoDistortionParams(sensor_msgs::CameraInfo& ci,
+                                          double k1, double k2, double t1,
+                                          double t2, double k3) {
+  // define size of the distortion vector
+  ci.D.resize(5);
   ci.D[0] = k1;
   ci.D[1] = k2;
   ci.D[2] = t1;
