@@ -144,7 +144,7 @@ void uvcROSDriver::initDevice() {
     }
   }
   // initialize imu msg publisher
-  imu_publisher_ = nh_.advertise<sensor_msgs::Imu>("/vio_imu", 1);
+  imu_publisher_ = nh_.advertise<sensor_msgs::Imu>("/vio_imu", 20);
   // wait on heart beat
   std::cout << "Waiting on device..." << std::endl;
   mavlink_message_t message;
@@ -509,11 +509,11 @@ inline void uvcROSDriver::selectCameraInfo(int camera,
 inline void uvcROSDriver::deinterleave(const uint8_t *mixed, uint8_t *array1,
                                        uint8_t *array2, size_t mixedLength,
                                        size_t imageWidth, size_t imageHeight) {
-
+  int i = 0;
+  int c = 0;
 #if defined __ARM_NEON__
   size_t vectors = mixedLength / 32;
-  size_t divider = (imageWidth + 16) / 32;
-  mixedLength %= 32;
+  size_t divider = (imageWidth + 16) * 2 / 32;
 
   while (vectors-- > 0) {
     const uint8x16_t src0 = vld1q_u8(mixed);
@@ -524,13 +524,13 @@ inline void uvcROSDriver::deinterleave(const uint8_t *mixed, uint8_t *array1,
       vst1q_u8(array2, dst.val[1]);
       array1 += 16;
       array2 += 16;
+      c += 16;
     }
+    i += 16;
     mixed += 32;
   }
 
 #endif
-  int i = 0;
-  int c = 0;
   while (c < imageWidth * imageHeight) {
     array1[c] = mixed[2 * i];
     array2[c] = mixed[2 * i + 1];
@@ -623,20 +623,14 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame) {
         msg_imu.angular_velocity.z = -gyr_z;
       }
 
-      msg_vio.imu.push_back(msg_imu);
-
-      // time stamp for imu msgs wrong?
       msg_imu.header.stamp =
           past_ + (now - past_) * (double(i) / frame->height);
+
+      msg_vio.imu.push_back(msg_imu);
 
       imu_publisher_.publish(msg_imu);
 
       count_prev = count;
-    }
-    // set imu values in image to 0
-    for (unsigned j = 0; j < 8; j++) {
-      static_cast<int16_t *>(frame->data)[int((i + 1) * frame->width - 8 + j)] =
-          zero;
     }
   }
 
@@ -648,14 +642,6 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame) {
   printf("time elapsed: %f   ", elapsed.toSec());
   printf("framerate: %f   ", 1.0f / elapsed.toSec());
   printf("%lu imu messages\n", msg_vio.imu.size());
-
-  for (unsigned i = 0; i < msg_vio.imu.size(); i++) {
-    msg_vio.imu[i].header.stamp =
-        now - elapsed +
-        ros::Duration(elapsed * (double(i) / msg_vio.imu.size()));
-  }
-
-  // publish imu msgs here instead?
 
   // temp container for the 2 images
   uint8_t left[(frame_size - 16 * 2 * frame->height) / 2];
