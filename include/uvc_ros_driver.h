@@ -81,7 +81,7 @@ class uvcROSDriver {
   bool uvc_cb_flag_ = false;
 
   int n_cameras_ = 2;
-  int camera_config_;
+  int camera_config_ = 1;
   int raw_width_ = 768;
   int raw_height_ = 480;
   int width_ = raw_width_ - 16;

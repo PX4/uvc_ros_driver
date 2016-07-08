@@ -39,23 +39,8 @@
  */
 
 #include "uvc_ros_driver.h"
+
 // declare helper function
-CameraParameters loadCustomCameraCalibration(const std::string calib_path);
-
-// void writeFocalLengthToYaml() {
-//   std::string package_path = ros::package::getPath("uvc_ros_driver");
-//   std::string calibrationFile0_Path =
-//       package_path + "/calib/stereoPair1_Parameters.yaml";
-//
-//   YAML::Node node =
-//       YAML::LoadFile(calibrationFile0_Path);  // gets the root node
-//   node["NewFocalLengths"]["1"] = "test";      // edit one of the nodes
-//   std::ofstream fout(calibrationFile0_Path);
-//   YAML::Emitter out;
-//   out << YAML::Block << node;
-//   fout << out.c_str();  // dump it back into the file
-// }
-
 CameraParameters loadCustomCameraCalibration(const std::string calib_path) {
   // load a camera calibration defined in the launch script
   try {
@@ -76,17 +61,19 @@ CameraParameters loadCustomCameraCalibration(const std::string calib_path) {
 }
 
 int main(int argc, char **argv) {
-  ros::init(argc, argv, "uvc_ros_driver");
+  ros::init(argc, argv, "uvc_camera");
   ros::NodeHandle nh("~");  // private nodehandle
 
   uvc::uvcROSDriver uvc_ros_driver(nh);
 
   // get params from launch file
-  bool flip, set_calibration, depth_map, calibration_mode;
-  int camera_config;
+  bool flip, set_calibration, depth_map, calibration_mode, ait_msgs;
+  int camera_config, number_of_cameras;
   std::string calibration_file_name;
   // TODO: check if parameter exist
   nh.getParam("flip", flip);
+  nh.getParam("numberOfCameras", number_of_cameras);
+  nh.getParam("AITMsgs", ait_msgs);
   nh.getParam("setCalibration", set_calibration);
   nh.getParam("depthMap", depth_map);
   nh.getParam("cameraConfig", camera_config);
@@ -103,11 +90,10 @@ int main(int argc, char **argv) {
 
   std::vector<std::pair<int, int>> homography_mapping;
   homography_mapping.push_back(std::make_pair(0, 1));
+
   // set parameter
-  // TODO: have a parameter for the number of cameras
-  uvc_ros_driver.setNumberOfCameras(2);
-  // TODO: have a parameter for the use of ait vio msgs instead of normal image
-  uvc_ros_driver.setUseOFAITMsgs(false);
+  uvc_ros_driver.setNumberOfCameras(number_of_cameras);
+  uvc_ros_driver.setUseOFAITMsgs(ait_msgs);
   uvc_ros_driver.setFlip(flip);
   uvc_ros_driver.setCalibrationParam(set_calibration);
   uvc_ros_driver.setUseOfDepthMap(depth_map);
