@@ -41,71 +41,73 @@
 #include "uvc_ros_driver.h"
 
 // declare helper function
-CameraParameters loadCustomCameraCalibration(const std::string calib_path) {
-  // load a camera calibration defined in the launch script
-  try {
-    YAML::Node YamlNode = YAML::LoadFile(calib_path);
+CameraParameters loadCustomCameraCalibration(const std::string calib_path)
+{
+	// load a camera calibration defined in the launch script
+	try {
+		YAML::Node YamlNode = YAML::LoadFile(calib_path);
 
-    if (YamlNode.IsNull()) {
-      printf("Failed to open camera calibration %s\n", calib_path.c_str());
-      exit(-1);
-    }
+		if (YamlNode.IsNull()) {
+			printf("Failed to open camera calibration %s\n", calib_path.c_str());
+			exit(-1);
+		}
 
-    return parseYaml(YamlNode);
-  }
-  catch (YAML::BadFile &e) {
-    printf("Failed to open camera calibration %s\nException: %s\n",
-           calib_path.c_str(), e.what());
-    exit(-1);
-  }
+		return parseYaml(YamlNode);
+
+	} catch (YAML::BadFile &e) {
+		printf("Failed to open camera calibration %s\nException: %s\n",
+		       calib_path.c_str(), e.what());
+		exit(-1);
+	}
 }
 
-int main(int argc, char **argv) {
-  ros::init(argc, argv, "uvc_camera");
-  ros::NodeHandle nh("~");  // private nodehandle
+int main(int argc, char **argv)
+{
+	ros::init(argc, argv, "uvc_camera");
+	ros::NodeHandle nh("~");  // private nodehandle
 
-  uvc::uvcROSDriver uvc_ros_driver(nh);
+	uvc::uvcROSDriver uvc_ros_driver(nh);
 
-  // get params from launch file
-  bool flip, set_calibration, depth_map, calibration_mode, ait_msgs;
-  int camera_config, number_of_cameras;
-  std::string calibration_file_name;
-  // TODO: check if parameter exist
-  nh.getParam("flip", flip);
-  nh.getParam("numberOfCameras", number_of_cameras);
-  nh.getParam("AITMsgs", ait_msgs);
-  nh.getParam("setCalibration", set_calibration);
-  nh.getParam("depthMap", depth_map);
-  nh.getParam("cameraConfig", camera_config);
-  nh.getParam("cameraConfigFile", calibration_file_name);
-  nh.getParam("calibrationMode", calibration_mode);
+	// get params from launch file
+	bool flip, set_calibration, depth_map, calibration_mode, ait_msgs;
+	int camera_config, number_of_cameras;
+	std::string calibration_file_name;
+	// TODO: check if parameter exist
+	nh.getParam("flip", flip);
+	nh.getParam("numberOfCameras", number_of_cameras);
+	nh.getParam("AITMsgs", ait_msgs);
+	nh.getParam("setCalibration", set_calibration);
+	nh.getParam("depthMap", depth_map);
+	nh.getParam("cameraConfig", camera_config);
+	nh.getParam("cameraConfigFile", calibration_file_name);
+	nh.getParam("calibrationMode", calibration_mode);
 
-  // read yaml calibration file from launch file parameter, file muss be located
-  // in the calib folder
-  std::string package_path = ros::package::getPath("uvc_ros_driver");
-  std::string calibrationFile_Path =
-      package_path + "/calib/" + calibration_file_name;
-  CameraParameters camParams =
-      loadCustomCameraCalibration(calibrationFile_Path);
+	// read yaml calibration file from launch file parameter, file muss be located
+	// in the calib folder
+	std::string package_path = ros::package::getPath("uvc_ros_driver");
+	std::string calibrationFile_Path =
+		package_path + "/calib/" + calibration_file_name;
+	CameraParameters camParams =
+		loadCustomCameraCalibration(calibrationFile_Path);
 
-  std::vector<std::pair<int, int>> homography_mapping;
-  homography_mapping.push_back(std::make_pair(0, 1));
+	std::vector<std::pair<int, int>> homography_mapping;
+	homography_mapping.push_back(std::make_pair(0, 1));
 
-  // set parameter
-  uvc_ros_driver.setNumberOfCameras(number_of_cameras);
-  uvc_ros_driver.setUseOFAITMsgs(ait_msgs);
-  uvc_ros_driver.setFlip(flip);
-  uvc_ros_driver.setCalibrationParam(set_calibration);
-  uvc_ros_driver.setUseOfDepthMap(depth_map);
-  uvc_ros_driver.setCameraConfig(camera_config);
-  uvc_ros_driver.setCalibrationMode(calibration_mode);
-  uvc_ros_driver.setCameraParams(camParams);
-  uvc_ros_driver.setHomographyMapping(homography_mapping);
-  // initialize device
-  uvc_ros_driver.initDevice();
-  // start device
-  uvc_ros_driver.startDevice();
-  // endless loop
-  ros::spin();
-  return 0;
+	// set parameter
+	uvc_ros_driver.setNumberOfCameras(number_of_cameras);
+	uvc_ros_driver.setUseOFAITMsgs(ait_msgs);
+	uvc_ros_driver.setFlip(flip);
+	uvc_ros_driver.setCalibrationParam(set_calibration);
+	uvc_ros_driver.setUseOfDepthMap(depth_map);
+	uvc_ros_driver.setCameraConfig(camera_config);
+	uvc_ros_driver.setCalibrationMode(calibration_mode);
+	uvc_ros_driver.setCameraParams(camParams);
+	uvc_ros_driver.setHomographyMapping(homography_mapping);
+	// initialize device
+	uvc_ros_driver.initDevice();
+	// start device
+	uvc_ros_driver.startDevice();
+	// endless loop
+	ros::spin();
+	return 0;
 }
