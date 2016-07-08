@@ -509,20 +509,23 @@ inline void uvcROSDriver::selectCameraInfo(int camera,
 inline void uvcROSDriver::deinterleave(const uint8_t *mixed, uint8_t *array1,
                                        uint8_t *array2, size_t mixedLength,
                                        size_t imageWidth, size_t imageHeight) {
-// TODO: modify ARM NEON instruction to support imageWidth
+
 #if defined __ARM_NEON__
   size_t vectors = mixedLength / 32;
+  size_t divider = (imageWidth + 16) / 32;
   mixedLength %= 32;
 
   while (vectors-- > 0) {
     const uint8x16_t src0 = vld1q_u8(mixed);
     const uint8x16_t src1 = vld1q_u8(mixed + 16);
     const uint8x16x2_t dst = vuzpq_u8(src0, src1);
-    vst1q_u8(array1, dst.val[0]);
-    vst1q_u8(array2, dst.val[1]);
+    if (vectors % divider != 0) {
+      vst1q_u8(array1, dst.val[0]);
+      vst1q_u8(array2, dst.val[1]);
+      array1 += 16;
+      array2 += 16;
+    }
     mixed += 32;
-    array1 += 16;
-    array2 += 16;
   }
 
 #endif
