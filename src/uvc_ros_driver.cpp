@@ -673,8 +673,8 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame) {
     frame_time_ = now;
     frameCounter_++;
     // set frame_id on images
-    msg_vio.left_image.header.frame_id = "camera_0_optical_frame";
-    msg_vio.right_image.header.frame_id = "camera_1_optical_frame";
+    msg_vio.left_image.header.frame_id = "cam_0_optical_frame";
+    msg_vio.right_image.header.frame_id = "cam_1_optical_frame";
     if (frameCounter_ % modulo_ == 0) {
       if (enable_ait_vio_msg_) {
         stereo_vio_1_pub_.publish(msg_vio);
@@ -684,9 +684,9 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame) {
         cam_1_pub_.publish(msg_vio.right_image);
         // set camera info header
         setCameraInfoHeader(info_cam_0_, width_, height_, frame_time_,
-                            "camera_0_optical_frame");
+                            "cam_0_optical_frame");
         setCameraInfoHeader(info_cam_1_, width_, height_, frame_time_,
-                            "camera_1_optical_frame");
+                            "cam_1_optical_frame");
         // publish camera info
         cam_0_info_pub_.publish(info_cam_0_);
         cam_1_info_pub_.publish(info_cam_1_);
@@ -701,8 +701,8 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame) {
     msg_vio.left_image.header.stamp = frame_time_;
     msg_vio.left_image.header.stamp = frame_time_;
     // set frame_id on images
-    msg_vio.left_image.header.frame_id = "camera_2_optical_frame";
-    msg_vio.right_image.header.frame_id = "camera_3_optical_frame";
+    msg_vio.left_image.header.frame_id = "cam_2_optical_frame";
+    msg_vio.right_image.header.frame_id = "cam_3_optical_frame";
     if (enable_ait_vio_msg_) {
       stereo_vio_2_pub_.publish(msg_vio);
     } else {
@@ -711,9 +711,9 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame) {
       cam_3_pub_.publish(msg_vio.right_image);
       // set camera info header
       setCameraInfoHeader(info_cam_2_, width_, height_, frame_time_,
-                          "camera_2_optical_frame");
+                          "cam_2_optical_frame");
       setCameraInfoHeader(info_cam_3_, width_, height_, frame_time_,
-                          "camera_3_optical_frame");
+                          "cam_3_optical_frame");
       // publish camera info
       cam_2_info_pub_.publish(info_cam_2_);
       cam_3_info_pub_.publish(info_cam_3_);
@@ -725,8 +725,8 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame) {
     msg_vio.left_image.header.stamp = frame_time_;
     msg_vio.left_image.header.stamp = frame_time_;
     // set frame_id on images
-    msg_vio.left_image.header.frame_id = "camera_4_optical_frame";
-    msg_vio.right_image.header.frame_id = "camera_5_optical_frame";
+    msg_vio.left_image.header.frame_id = "cam_4_optical_frame";
+    msg_vio.right_image.header.frame_id = "cam_5_optical_frame";
     if (enable_ait_vio_msg_) {
       stereo_vio_3_pub_.publish(msg_vio);
     } else {
@@ -735,9 +735,9 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame) {
       cam_5_pub_.publish(msg_vio.right_image);
       // set camera info header
       setCameraInfoHeader(info_cam_4_, width_, height_, frame_time_,
-                          "camera_4_optical_frame");
+                          "cam_4_optical_frame");
       setCameraInfoHeader(info_cam_5_, width_, height_, frame_time_,
-                          "camera_5_optical_frame");
+                          "cam_5_optical_frame");
       // publish camera info
       cam_4_info_pub_.publish(info_cam_4_);
       cam_5_info_pub_.publish(info_cam_5_);
@@ -749,8 +749,8 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame) {
     msg_vio.left_image.header.stamp = frame_time_;
     msg_vio.left_image.header.stamp = frame_time_;
     // set frame_id on images
-    msg_vio.left_image.header.frame_id = "camera_6_optical_frame";
-    msg_vio.right_image.header.frame_id = "camera_7_optical_frame";
+    msg_vio.left_image.header.frame_id = "cam_6_optical_frame";
+    msg_vio.right_image.header.frame_id = "cam_7_optical_frame";
     if (enable_ait_vio_msg_) {
       stereo_vio_4_pub_.publish(msg_vio);
     } else {
@@ -759,9 +759,9 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame) {
       cam_7_pub_.publish(msg_vio.right_image);
       // set camera info header
       setCameraInfoHeader(info_cam_6_, width_, height_, frame_time_,
-                          "camera_6_optical_frame");
+                          "cam_6_optical_frame");
       setCameraInfoHeader(info_cam_7_, width_, height_, frame_time_,
-                          "camera_7_optical_frame");
+                          "cam_7_optical_frame");
       // publish camera info
       cam_6_info_pub_.publish(info_cam_6_);
       cam_7_info_pub_.publish(info_cam_7_);
@@ -773,8 +773,8 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame) {
     msg_vio.left_image.header.stamp = frame_time_;
     msg_vio.left_image.header.stamp = frame_time_;
     // set frame_id on images
-    msg_vio.left_image.header.frame_id = "camera_8_optical_frame";
-    msg_vio.right_image.header.frame_id = "camera_9_optical_frame";
+    msg_vio.left_image.header.frame_id = "cam_8_optical_frame";
+    msg_vio.right_image.header.frame_id = "cam_9_optical_frame";
     if (enable_ait_vio_msg_) {
       stereo_vio_5_pub_.publish(msg_vio);
     } else {
@@ -783,9 +783,9 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame) {
       cam_9_pub_.publish(msg_vio.right_image);
       // set camera info header
       setCameraInfoHeader(info_cam_8_, width_, height_, frame_time_,
-                          "camera_8_optical_frame");
+                          "cam_8_optical_frame");
       setCameraInfoHeader(info_cam_9_, width_, height_, frame_time_,
-                          "camera_9_optical_frame");
+                          "cam_9_optical_frame");
       // publish camera info
       cam_8_info_pub_.publish(info_cam_8_);
       cam_9_info_pub_.publish(info_cam_9_);
