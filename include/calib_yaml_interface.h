@@ -43,16 +43,17 @@ inline CameraParameters parseYaml(const YAML::Node &node)
 
 		if (!omni.compare(CameraModel.as<std::string>())) {
 			v.CameraModel[h] = v.OMNI;
+
 		} else {
 			v.CameraModel[h] = v.PINHOLE;
 		}
 	}
 
 	//-------------------------camera transformation matrix----------------------------
-	for (int h = 0; h < int(node.size())/2; h++) {
+	for (int h = 0; h < int(node.size()) / 2; h++) {
 		cam_name.str("");
 		cam_name.clear();
-		cam_name << "cam" << h*2+1;
+		cam_name << "cam" << h * 2 + 1;
 		YAML::Node CameraTransformationMatrix = node[cam_name.str()]["T_cn_cnm1"];
 
 		for (std::size_t i = 0; i < CameraTransformationMatrix.size(); i++) {
@@ -101,6 +102,7 @@ inline CameraParameters parseYaml(const YAML::Node &node)
 			v.FocalLength[h][1] = intrinsics[2].as<double>();
 			v.PrincipalPoint[h][0] = intrinsics[3].as<double>();
 			v.PrincipalPoint[h][1] = intrinsics[4].as<double>();
+
 		} else {
 			v.FocalLength[h][0] = intrinsics[0].as<double>();
 			v.FocalLength[h][1] = intrinsics[1].as<double>();

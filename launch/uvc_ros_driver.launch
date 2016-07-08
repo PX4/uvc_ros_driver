@@ -1,19 +1,26 @@
 <launch>
 
   <arg name="flip" default="false" />     <!-- Horizontal + Vertical flip -->
-  <arg name="serialconfig" default="true" />     <!-- use serial interface to upload config -->
+  <arg name="numberOfCameras" default="2" />
+  <!-- upload calibration to fpga -->
   <arg name="setCalibration" default="true" />
-  <!-- calibrationMode 0 no calibration, 1 calibration for 1 camera pair, 2 calibration for 2 camera pair s and so on -->
+  <!-- use of the AIT ROS message warapper -->
+  <arg name="AITMsgs" default="false" />
+  <!-- calibrationMode 0 no calibration, 1: calibration for 1 camera pair,
+      2: calibration for 2 camera pairs and so on -->
   <arg name="calibrationMode" default="0" />
   <arg name="depthMap" default="true" />
-  <arg name="cameraConfig" default="1" />   <!-- 1: 2 front cameras, 3: 2 front + two left? cameras -->
+  <!-- 1: 2 front cameras, 3: 2 front + 2nd camera pair,
+       7: 2 front + 2nd and 3rd camra pair -->
+  <arg name="cameraConfig" default="1" />
   <!-- calibration file in folder calib -->
   <arg name="cameraConfigFile" default="Omni_Parameters.yaml" />
 
   <!-- camera node -->
   <node pkg="uvc_ros_driver" name="uvc_ros_driver_node" type="uvc_ros_driver_node" output="screen">
     <param name="flip" type="bool"  value="$(arg flip)" />
-    <param name="serialconfig" type="bool"  value="$(arg serialconfig)" />
+    <param name="numberOfCameras" type="int"  value="$(arg numberOfCameras)" />
+    <param name="AITMsgs" type="bool"  value="$(arg AITMsgs)" />
     <param name="setCalibration" type="bool"  value="$(arg setCalibration)" />
     <param name="calibrationMode" type="int"  value="$(arg calibrationMode)" />
     <param name="depthMap" type="bool"  value="$(arg depthMap)" />

@@ -92,13 +92,13 @@ initialize_defaults()
 	fd     = -1;
 	status = SERIAL_PORT_CLOSED;
 
-	uart_name = (char*)"/dev/ttyUSB0";
+	uart_name = (char *)"/dev/ttyUSB0";
 	baudrate  = 57600;
 
 	// Start mutex
 	int result = pthread_mutex_init(&lock, NULL);
-	if ( result != 0 )
-	{
+
+	if (result != 0) {
 		printf("\n mutex init failed\n");
 		throw 1;
 	}
@@ -127,36 +127,33 @@ read_message(mavlink_message_t &message)
 	// --------------------------------------------------------------------------
 	//   PARSE MESSAGE
 	// --------------------------------------------------------------------------
-	if (result > 0)
-	{
+	if (result > 0) {
 		// the parsing
 		msgReceived = mavlink_parse_char(MAVLINK_COMM_1, cp, &message, &status);
 
 		// check for dropped packets
-		if ( (lastStatus.packet_rx_drop_count != status.packet_rx_drop_count) && debug )
-		{
+		if ((lastStatus.packet_rx_drop_count != status.packet_rx_drop_count) && debug) {
 			printf("ERROR: DROPPED %d PACKETS\n", status.packet_rx_drop_count);
-			unsigned char v=cp;
-			fprintf(stderr,"%02x ", v);
+			unsigned char v = cp;
+			fprintf(stderr, "%02x ", v);
 		}
+
 		lastStatus = status;
 	}
 
 	// Couldn't read from port
-	else
-	{
+	else {
 		fprintf(stderr, "ERROR: Could not read from fd %d\n", fd);
 	}
 
 	// --------------------------------------------------------------------------
 	//   DEBUGGING REPORTS
 	// --------------------------------------------------------------------------
-	if(msgReceived && debug)
-	{
+	if (msgReceived && debug) {
 		// Report info
 		printf("Received message from serial with ID #%d (sys:%d|comp:%d):\n", message.msgid, message.sysid, message.compid);
 
-		fprintf(stderr,"Received serial data: ");
+		fprintf(stderr, "Received serial data: ");
 		unsigned int i;
 		uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
 
@@ -164,20 +161,18 @@ read_message(mavlink_message_t &message)
 		unsigned int messageLength = mavlink_msg_to_send_buffer(buffer, &message);
 
 		// message length error
-		if (messageLength > MAVLINK_MAX_PACKET_LEN)
-		{
+		if (messageLength > MAVLINK_MAX_PACKET_LEN) {
 			fprintf(stderr, "\nFATAL ERROR: MESSAGE LENGTH IS LARGER THAN BUFFER SIZE\n");
 		}
 
 		// print out the buffer
-		else
-		{
-			for (i=0; i<messageLength; i++)
-			{
-				unsigned char v=buffer[i];
-				fprintf(stderr,"%02x ", v);
+		else {
+			for (i = 0; i < messageLength; i++) {
+				unsigned char v = buffer[i];
+				fprintf(stderr, "%02x ", v);
 			}
-			fprintf(stderr,"\n");
+
+			fprintf(stderr, "\n");
 		}
 	}
 
@@ -195,10 +190,10 @@ write_message(const mavlink_message_t &message)
 	char buf[300];
 
 	// Translate message to buffer
-	unsigned len = mavlink_msg_to_send_buffer((uint8_t*)buf, &message);
+	unsigned len = mavlink_msg_to_send_buffer((uint8_t *)buf, &message);
 
 	// Write buffer to serial port, locks port while writing
-	int bytesWritten = _write_port(buf,len);
+	int bytesWritten = _write_port(buf, len);
 
 	return bytesWritten;
 }
@@ -223,8 +218,7 @@ open_serial()
 	fd = _open_port(uart_name);
 
 	// Check success
-	if (fd == -1)
-	{
+	if (fd == -1) {
 		printf("failure, could not open port.\n");
 		throw EXIT_FAILURE;
 	}
@@ -237,13 +231,12 @@ open_serial()
 	// --------------------------------------------------------------------------
 	//   CHECK STATUS
 	// --------------------------------------------------------------------------
-	if (!success)
-	{
+	if (!success) {
 		printf("failure, could not configure port.\n");
 		throw EXIT_FAILURE;
 	}
-	if (fd <= 0)
-	{
+
+	if (fd <= 0) {
 		printf("Connection attempt to port %s with %d baud, 8N1 failed, exiting.\n", uart_name, baudrate);
 		throw EXIT_FAILURE;
 	}
@@ -274,9 +267,8 @@ close_serial()
 
 	int result = close(fd);
 
-	if ( result )
-	{
-		fprintf(stderr,"WARNING: Error on port close (%i)\n", result );
+	if (result) {
+		fprintf(stderr, "WARNING: Error on port close (%i)\n", result);
 	}
 
 	status = false;
@@ -309,13 +301,13 @@ stop()
 // ------------------------------------------------------------------------------
 void
 Serial_Port::
-handle_quit( int sig )
+handle_quit(int sig)
 {
 	try {
 		stop();
-	}
-	catch (int error) {
-		fprintf(stderr,"Warning, could not stop serial port\n");
+
+	} catch (int error) {
+		fprintf(stderr, "Warning, could not stop serial port\n");
 	}
 }
 
@@ -326,7 +318,7 @@ handle_quit( int sig )
 // Where the actual port opening happens, returns file descriptor 'fd'
 int
 Serial_Port::
-_open_port(const char* port)
+_open_port(const char *port)
 {
 	// Open serial port
 	// O_RDWR - Read and write
@@ -334,15 +326,13 @@ _open_port(const char* port)
 	fd = open(port, O_RDWR | O_NOCTTY | O_NDELAY);
 
 	// Check for Errors
-	if (fd == -1)
-	{
+	if (fd == -1) {
 		/* Could not open the port. */
-		return(-1);
+		return (-1);
 	}
 
 	// Finalize
-	else
-	{
+	else {
 		fcntl(fd, F_SETFL, 0);
 	}
 
@@ -359,16 +349,15 @@ Serial_Port::
 _setup_port(int baud, int data_bits, int stop_bits, bool parity, bool hardware_control)
 {
 	// Check file descriptor
-	if(!isatty(fd))
-	{
+	if (!isatty(fd)) {
 		fprintf(stderr, "\nERROR: file descriptor %d is NOT a serial port\n", fd);
 		return false;
 	}
 
 	// Read file descritor configuration
 	struct termios  config;
-	if(tcgetattr(fd, &config) < 0)
-	{
+
+	if (tcgetattr(fd, &config) < 0) {
 		fprintf(stderr, "\nERROR: could not read configuration of fd %d\n", fd);
 		return false;
 	}
@@ -379,7 +368,7 @@ _setup_port(int baud, int data_bits, int stop_bits, bool parity, bool hardware_c
 	// no input parity check, don't strip high bit off,
 	// no XON/XOFF software flow control
 	config.c_iflag &= ~(IGNBRK | BRKINT | ICRNL |
-						INLCR | PARMRK | INPCK | ISTRIP | IXON);
+			    INLCR | PARMRK | INPCK | ISTRIP | IXON);
 
 	// Output flags - Turn off output processing
 	// no CR to NL translation, no NL to CR-NL translation,
@@ -387,15 +376,15 @@ _setup_port(int baud, int data_bits, int stop_bits, bool parity, bool hardware_c
 	// no Ctrl-D suppression, no fill characters, no case mapping,
 	// no local output processing
 	config.c_oflag &= ~(OCRNL | ONLCR | ONLRET |
-						 ONOCR | OFILL | OPOST);
+			    ONOCR | OFILL | OPOST);
 
-	#ifdef OLCUC
-		config.c_oflag &= ~OLCUC;
-	#endif
+#ifdef OLCUC
+	config.c_oflag &= ~OLCUC;
+#endif
 
-	#ifdef ONOEOT
-		config.c_oflag &= ~ONOEOT;
-	#endif
+#ifdef ONOEOT
+	config.c_oflag &= ~ONOEOT;
+#endif
 
 	// No line processing:
 	// echo off, echo newline off, canonical mode off,
@@ -418,75 +407,81 @@ _setup_port(int baud, int data_bits, int stop_bits, bool parity, bool hardware_c
 	////tcgetattr(fd, &options);
 
 	// Apply baudrate
-	switch (baud)
-	{
-		case 1200:
-			if (cfsetispeed(&config, B1200) < 0 || cfsetospeed(&config, B1200) < 0)
-			{
-				fprintf(stderr, "\nERROR: Could not set desired baud rate of %d Baud\n", baud);
-				return false;
-			}
-			break;
-		case 1800:
-			cfsetispeed(&config, B1800);
-			cfsetospeed(&config, B1800);
-			break;
-		case 9600:
-			cfsetispeed(&config, B9600);
-			cfsetospeed(&config, B9600);
-			break;
-		case 19200:
-			cfsetispeed(&config, B19200);
-			cfsetospeed(&config, B19200);
-			break;
-		case 38400:
-			if (cfsetispeed(&config, B38400) < 0 || cfsetospeed(&config, B38400) < 0)
-			{
-				fprintf(stderr, "\nERROR: Could not set desired baud rate of %d Baud\n", baud);
-				return false;
-			}
-			break;
-		case 57600:
-			if (cfsetispeed(&config, B57600) < 0 || cfsetospeed(&config, B57600) < 0)
-			{
-				fprintf(stderr, "\nERROR: Could not set desired baud rate of %d Baud\n", baud);
-				return false;
-			}
-			break;
-		case 115200:
-			if (cfsetispeed(&config, B115200) < 0 || cfsetospeed(&config, B115200) < 0)
-			{
-				fprintf(stderr, "\nERROR: Could not set desired baud rate of %d Baud\n", baud);
-				return false;
-			}
-			break;
-
-		// These two non-standard (by the 70'ties ) rates are fully supported on
-		// current Debian and Mac OS versions (tested since 2010).
-		case 460800:
-			if (cfsetispeed(&config, B460800) < 0 || cfsetospeed(&config, B460800) < 0)
-			{
-				fprintf(stderr, "\nERROR: Could not set desired baud rate of %d Baud\n", baud);
-				return false;
-			}
-			break;
-		case 921600:
-			if (cfsetispeed(&config, B921600) < 0 || cfsetospeed(&config, B921600) < 0)
-			{
-				fprintf(stderr, "\nERROR: Could not set desired baud rate of %d Baud\n", baud);
-				return false;
-			}
-			break;
-		default:
-			fprintf(stderr, "ERROR: Desired baud rate %d could not be set, aborting.\n", baud);
+	switch (baud) {
+	case 1200:
+		if (cfsetispeed(&config, B1200) < 0 || cfsetospeed(&config, B1200) < 0) {
+			fprintf(stderr, "\nERROR: Could not set desired baud rate of %d Baud\n", baud);
 			return false;
+		}
 
-			break;
+		break;
+
+	case 1800:
+		cfsetispeed(&config, B1800);
+		cfsetospeed(&config, B1800);
+		break;
+
+	case 9600:
+		cfsetispeed(&config, B9600);
+		cfsetospeed(&config, B9600);
+		break;
+
+	case 19200:
+		cfsetispeed(&config, B19200);
+		cfsetospeed(&config, B19200);
+		break;
+
+	case 38400:
+		if (cfsetispeed(&config, B38400) < 0 || cfsetospeed(&config, B38400) < 0) {
+			fprintf(stderr, "\nERROR: Could not set desired baud rate of %d Baud\n", baud);
+			return false;
+		}
+
+		break;
+
+	case 57600:
+		if (cfsetispeed(&config, B57600) < 0 || cfsetospeed(&config, B57600) < 0) {
+			fprintf(stderr, "\nERROR: Could not set desired baud rate of %d Baud\n", baud);
+			return false;
+		}
+
+		break;
+
+	case 115200:
+		if (cfsetispeed(&config, B115200) < 0 || cfsetospeed(&config, B115200) < 0) {
+			fprintf(stderr, "\nERROR: Could not set desired baud rate of %d Baud\n", baud);
+			return false;
+		}
+
+		break;
+
+	// These two non-standard (by the 70'ties ) rates are fully supported on
+	// current Debian and Mac OS versions (tested since 2010).
+	case 460800:
+		if (cfsetispeed(&config, B460800) < 0 || cfsetospeed(&config, B460800) < 0) {
+			fprintf(stderr, "\nERROR: Could not set desired baud rate of %d Baud\n", baud);
+			return false;
+		}
+
+		break;
+
+	case 921600:
+		if (cfsetispeed(&config, B921600) < 0 || cfsetospeed(&config, B921600) < 0) {
+			fprintf(stderr, "\nERROR: Could not set desired baud rate of %d Baud\n", baud);
+			return false;
+		}
+
+		break;
+
+	default:
+		fprintf(stderr, "ERROR: Desired baud rate %d could not be set, aborting.\n", baud);
+		return false;
+
+		break;
 	}
 
 	// Finally, apply the configuration
-	if(tcsetattr(fd, TCSAFLUSH, &config) < 0)
-	{
+	if (tcsetattr(fd, TCSAFLUSH, &config) < 0) {
 		fprintf(stderr, "\nERROR: could not set configuration of fd %d\n", fd);
 		return false;
 	}

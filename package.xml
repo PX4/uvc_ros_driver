@@ -47,6 +47,8 @@
   <build_depend>std_msgs</build_depend>
   <build_depend>ait_ros_messages</build_depend>
   <build_depend>roslib</build_depend>
+  <build_depend>image_transport</build_depend>
+  <run_depend>image_transport</run_depend>
   <run_depend>libuvc</run_depend>
   <run_depend>roscpp</run_depend>
   <run_depend>rospy</run_depend>
