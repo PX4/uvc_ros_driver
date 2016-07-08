@@ -2,6 +2,7 @@
 #define __CAMERA_INFO_HELPER_H__
 
 #include "fpga_calibration.h"
+#include <ros/ros.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/distortion_models.h>
 #include <string>
@@ -44,6 +45,15 @@ inline void setCameraInfoDistortionParams(sensor_msgs::CameraInfo& ci,
   ci.D[2] = t1;
   ci.D[3] = t2;
   ci.D[4] = k3;
+}
+
+inline void setCameraInfoHeader(sensor_msgs::CameraInfo& ci, int width,
+                                int height, const ros::Time& t,
+                                const std::string& frame_id) {
+  ci.width = width;
+  ci.height = height;
+  ci.header.stamp = t;
+  ci.header.frame_id = frame_id;
 }
 
 #endif /* end of include guard: __CAMERA_INFO_HELPER_H__ */

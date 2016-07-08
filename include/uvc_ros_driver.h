@@ -103,8 +103,6 @@ class uvcROSDriver {
   std::vector<Eigen::Vector2d> p_;
   std::vector<Eigen::Matrix3d> H_;
 
-  std::string node_name_;
-
   CameraParameters camera_params_;
   // serial port
   Serial_Port sp_;
@@ -115,6 +113,8 @@ class uvcROSDriver {
   uvc_stream_ctrl_t ctrl_;
   // ros node handle
   ros::NodeHandle nh_;
+  // node name
+  std::string node_name_;
   // time
   ros::Time past_;
   ros::Time frame_time_;
@@ -243,7 +243,7 @@ class uvcROSDriver {
   };
   void setCalibrationMode(int calibration_mode) {
     calibration_mode_ = calibration_mode;
-    // update modulo_ varable also
+    // update modulo_ variable also
     if (calibration_mode != 0) {
       modulo_ = 12 / calibration_mode;
     }
