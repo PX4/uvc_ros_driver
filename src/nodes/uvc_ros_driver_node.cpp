@@ -73,7 +73,7 @@ int main(int argc, char **argv)
 	// get params from launch file
 	bool flip, set_calibration, depth_map, calibration_mode, ait_msgs;
 	int camera_config, number_of_cameras;
-	std::string calibration_file_name;
+	std::string calibration_file_path;
 	// TODO: check if parameter exist
 	nh.getParam("flip", flip);
 	nh.getParam("numberOfCameras", number_of_cameras);
@@ -81,13 +81,12 @@ int main(int argc, char **argv)
 	nh.getParam("setCalibration", set_calibration);
 	nh.getParam("depthMap", depth_map);
 	nh.getParam("cameraConfig", camera_config);
-	nh.getParam("cameraConfigFile", calibration_file_name);
+	nh.getParam("cameraConfigFile", calibration_file_path);
 	nh.getParam("calibrationMode", calibration_mode);
 
 	// read yaml calibration file from device
-	std::string calibrationFile_Path = "/media/camera/calibration.yaml";
 	CameraParameters camParams =
-		loadCustomCameraCalibration(calibrationFile_Path);
+		loadCustomCameraCalibration(calibration_file_path);
 
 	std::vector<std::pair<int, int>> homography_mapping;
 	homography_mapping.push_back(std::make_pair(0, 1));
