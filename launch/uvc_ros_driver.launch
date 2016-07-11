@@ -26,6 +26,7 @@
     <param name="depthMap" type="bool"  value="$(arg depthMap)" />
     <param name="cameraConfig" type="int"  value="$(arg cameraConfig)" />
     <param name="cameraConfigFile" type="string"  value="$(arg cameraConfigFile)" />
+    <rosparam command="load" file="$(find uvc_ros_driver)/params/homography_mapping.yaml" />
   </node>
 
 </launch>

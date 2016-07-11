@@ -89,7 +89,14 @@ int main(int argc, char **argv)
 		loadCustomCameraCalibration(calibration_file_path);
 
 	std::vector<std::pair<int, int>> homography_mapping;
-	homography_mapping.push_back(std::make_pair(0, 1));
+	// import homograpy mapping from yaml file
+	XmlRpc::XmlRpcValue homography_import;
+	nh.param("homography_mapping", homography_import, homography_import);
+
+	for (int i = 0; i < homography_import.size(); i++) {
+		homography_mapping.push_back(std::make_pair((int)homography_import[i][0],
+					     (int)homography_import[i][1]));
+	}
 
 	// set parameter
 	uvc_ros_driver.setNumberOfCameras(number_of_cameras);
