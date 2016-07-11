@@ -49,6 +49,7 @@ CameraParameters loadCustomCameraCalibration(const std::string calib_path)
 
 		if (YamlNode.IsNull()) {
 			printf("Failed to open camera calibration %s\n", calib_path.c_str());
+			ROS_ERROR("Failed to open camera calibration");
 			exit(-1);
 		}
 
@@ -57,6 +58,7 @@ CameraParameters loadCustomCameraCalibration(const std::string calib_path)
 	} catch (YAML::BadFile &e) {
 		printf("Failed to open camera calibration %s\nException: %s\n",
 		       calib_path.c_str(), e.what());
+		ROS_ERROR("Failed to open camera calibration");
 		exit(-1);
 	}
 }
@@ -82,11 +84,8 @@ int main(int argc, char **argv)
 	nh.getParam("cameraConfigFile", calibration_file_name);
 	nh.getParam("calibrationMode", calibration_mode);
 
-	// read yaml calibration file from launch file parameter, file muss be located
-	// in the calib folder
-	std::string package_path = ros::package::getPath("uvc_ros_driver");
-	std::string calibrationFile_Path =
-		package_path + "/calib/" + calibration_file_name;
+	// read yaml calibration file from device
+	std::string calibrationFile_Path = "/media/camera/calibration.yaml";
 	CameraParameters camParams =
 		loadCustomCameraCalibration(calibrationFile_Path);
 
