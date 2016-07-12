@@ -131,6 +131,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
   ${Eigen3_INCLUDE_DIRS}
   include
+  /usr/include/libusb-1.0
   src/nodes/c_library
   src/nodes
 )
