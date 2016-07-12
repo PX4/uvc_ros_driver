@@ -49,6 +49,7 @@ CameraParameters loadCustomCameraCalibration(const std::string calib_path)
 
 		if (YamlNode.IsNull()) {
 			printf("Failed to open camera calibration %s\n", calib_path.c_str());
+			ROS_ERROR("Failed to open camera calibration");
 			exit(-1);
 		}
 
@@ -57,6 +58,7 @@ CameraParameters loadCustomCameraCalibration(const std::string calib_path)
 	} catch (YAML::BadFile &e) {
 		printf("Failed to open camera calibration %s\nException: %s\n",
 		       calib_path.c_str(), e.what());
+		ROS_ERROR("Failed to open camera calibration");
 		exit(-1);
 	}
 }
@@ -71,7 +73,7 @@ int main(int argc, char **argv)
 	// get params from launch file
 	bool flip, set_calibration, depth_map, calibration_mode, ait_msgs;
 	int camera_config, number_of_cameras;
-	std::string calibration_file_name;
+	std::string calibration_file_path;
 	// TODO: check if parameter exist
 	nh.getParam("flip", flip);
 	nh.getParam("numberOfCameras", number_of_cameras);
@@ -79,19 +81,22 @@ int main(int argc, char **argv)
 	nh.getParam("setCalibration", set_calibration);
 	nh.getParam("depthMap", depth_map);
 	nh.getParam("cameraConfig", camera_config);
-	nh.getParam("cameraConfigFile", calibration_file_name);
+	nh.getParam("cameraConfigFile", calibration_file_path);
 	nh.getParam("calibrationMode", calibration_mode);
 
-	// read yaml calibration file from launch file parameter, file muss be located
-	// in the calib folder
-	std::string package_path = ros::package::getPath("uvc_ros_driver");
-	std::string calibrationFile_Path =
-		package_path + "/calib/" + calibration_file_name;
+	// read yaml calibration file from device
 	CameraParameters camParams =
-		loadCustomCameraCalibration(calibrationFile_Path);
+		loadCustomCameraCalibration(calibration_file_path);
 
 	std::vector<std::pair<int, int>> homography_mapping;
-	homography_mapping.push_back(std::make_pair(0, 1));
+	// import homograpy mapping from yaml file
+	XmlRpc::XmlRpcValue homography_import;
+	nh.param("homography_mapping", homography_import, homography_import);
+
+	for (int i = 0; i < homography_import.size(); i++) {
+		homography_mapping.push_back(std::make_pair((int)homography_import[i][0],
+					     (int)homography_import[i][1]));
+	}
 
 	// set parameter
 	uvc_ros_driver.setNumberOfCameras(number_of_cameras);

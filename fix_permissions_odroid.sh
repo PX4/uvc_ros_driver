@@ -14,4 +14,15 @@ string2="usbserial vendor=0x$idVendor product=0x$idProduct"
 
 echo "$string2" >> /etc/modules
 
+# do not  display ext4 swap and mmc devices
+blkid | grep -v -e 'ext4' -e 'swap' -e 'mmcblk'
+echo "Provide UUID of the USB device"
+read uuid
+fstab_str="RUN+=\"/bin/mount -t vfat -o uid=0,gid=46,umask=007 /dev/disk/by-uuid/$uuid /media/camera\""
+# copy cmd string to usbrules
+echo "$fstab_str" >> /etc/udev/rules.d/80-usbdevice.rules
+
+# create mount folder
+mkdir /media/camera
+
 echo "Unplug the USB device and reboot your system."
