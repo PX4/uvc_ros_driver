@@ -80,7 +80,7 @@ int main(int argc, char **argv)
 	nh.getParam("AITMsgs", ait_msgs);
 	nh.getParam("setCalibration", set_calibration);
 	nh.getParam("depthMap", depth_map);
-	nh.getParam("cameraConfig", camera_config);
+//	nh.getParam("cameraConfig", camera_config);
 	nh.getParam("cameraConfigFile", calibration_file_path);
 	nh.getParam("calibrationMode", calibration_mode);
 
@@ -104,7 +104,7 @@ int main(int argc, char **argv)
 	uvc_ros_driver.setFlip(flip);
 	uvc_ros_driver.setCalibrationParam(set_calibration);
 	uvc_ros_driver.setUseOfDepthMap(depth_map);
-	uvc_ros_driver.setCameraConfig(camera_config);
+//	uvc_ros_driver.setCameraConfig(camera_config);
 	uvc_ros_driver.setCalibrationMode(calibration_mode);
 	uvc_ros_driver.setCameraParams(camParams);
 	uvc_ros_driver.setHomographyMapping(homography_mapping);
