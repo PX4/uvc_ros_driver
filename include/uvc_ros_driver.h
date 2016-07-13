@@ -229,15 +229,30 @@ public:
 	void setNumberOfCameras(int n_cameras)
 	{
 		n_cameras_ = n_cameras;
+        switch (n_cameras) {
+        case 8:
+            camera_config_ = 0x0F;
+            break;
+        case 6:
+            camera_config_ = 0x07;
+            break;
+        case 4:
+            camera_config_ = 0x03;
+            break;
+        case 2:
+        default:
+            camera_config_ = 0x01;
+            break;
+        }
 	};
-	int getCameraConfig()
-	{
-		return camera_config_;
-	};
-	void setCameraConfig(int camera_config)
-	{
-		camera_config_ = camera_config;
-	};
+    int getCameraConfig()
+    {
+        return camera_config_;
+    };
+//	void setCameraConfig(int camera_config)
+//	{
+//		camera_config_ = camera_config;
+//	};
 	CameraParameters getCameraParams()
 	{
 		return camera_params_;

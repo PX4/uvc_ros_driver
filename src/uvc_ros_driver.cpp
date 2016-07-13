@@ -59,7 +59,8 @@ uvcROSDriver::~uvcROSDriver()
 	sp_.close_serial();
 	// close uvc device
 	uvc_close(devh_);
-	ROS_INFO("Device closed");
+	std::cout << "Device closed" << std::endl;
+	// ROS_INFO("Device closed");
 	uvc_unref_device(dev_);
 	uvc_exit(ctx_);
 }
@@ -70,7 +71,7 @@ void uvcROSDriver::initDevice()
 {
 	// initialize serial port
 	// sp_ = Serial_Port("/dev/ttyUSB0", 115200);
-	sp_ = Serial_Port("/dev/serial/by-id/usb-Cypress_FX3-if03-port0", 115200);
+	sp_ = Serial_Port("/dev/serial/by-id/usb-Cypress_FX3-if02", 115200);
 	sp_.open_serial();
 
 	if (enable_ait_vio_msg_) {
