@@ -1,0 +1,7 @@
+ACTION!="add|change|move", GOTO="mm_usb_device_blacklist_end"
+SUBSYSTEM!="usb", GOTO="mm_usb_device_blacklist_end"
+ENV{DEVTYPE}!="usb_device",  GOTO="mm_usb_device_blacklist_end"
+
+# All devices from Cypress
+ATTRS{idVendor}=="04b4", ENV{ID_MM_DEVICE_IGNORE}="1"
+

@@ -8,3 +8,6 @@ SUBSYSTEMS==\"usb\", ENV{DEVTYPE}==\"usb_device\", ATTRS{idVendor}==\"$idVendor\
 echo "$string" >> /etc/udev/rules.d/99-uvc.rules
 
 echo "Unplug the USB device and plug it back in."
+
+udevadm control --reload-rules
+
