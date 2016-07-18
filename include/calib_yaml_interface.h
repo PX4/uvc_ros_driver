@@ -9,6 +9,7 @@
 // cameraParameters
 // =========================================================
 struct CameraParameters { // parameters of one camera
+	bool isValid;
 	double FocalLength[8][2];
 	double PrincipalPoint[8][2];
 	double DistortionCoeffs[8][4];
@@ -25,6 +26,7 @@ struct CameraParameters { // parameters of one camera
 inline CameraParameters parseYaml(const YAML::Node &node)
 {
 	CameraParameters v;
+	v.isValid = true;
 
 	std::string pinhole = "pinhole";
 	std::string omni = "omni";

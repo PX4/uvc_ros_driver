@@ -43,24 +43,25 @@
 // declare helper function
 CameraParameters loadCustomCameraCalibration(const std::string calib_path)
 {
+	CameraParameters cp;
+
 	// load a camera calibration defined in the launch script
 	try {
 		YAML::Node YamlNode = YAML::LoadFile(calib_path);
 
 		if (YamlNode.IsNull()) {
-			printf("Failed to open camera calibration %s\n", calib_path.c_str());
-			ROS_ERROR("Failed to open camera calibration");
-			exit(-1);
+			ROS_INFO("Continuing without calibration file");
+			cp.isValid = false;
 		}
 
-		return parseYaml(YamlNode);
+		cp = parseYaml(YamlNode);
 
 	} catch (YAML::BadFile &e) {
-		printf("Failed to open camera calibration %s\nException: %s\n",
-		       calib_path.c_str(), e.what());
-		ROS_ERROR("Failed to open camera calibration");
-		exit(-1);
+		ROS_INFO("Continuing without calibration file");
+		cp.isValid = false;
 	}
+
+	return cp;
 }
 
 int main(int argc, char **argv)
@@ -80,7 +81,7 @@ int main(int argc, char **argv)
 	nh.getParam("AITMsgs", ait_msgs);
 	nh.getParam("setCalibration", set_calibration);
 	nh.getParam("depthMap", depth_map);
-//	nh.getParam("cameraConfig", camera_config);
+	//	nh.getParam("cameraConfig", camera_config);
 	nh.getParam("cameraConfigFile", calibration_file_path);
 	nh.getParam("calibrationMode", calibration_mode);
 

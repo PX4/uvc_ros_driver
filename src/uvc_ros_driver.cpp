@@ -274,163 +274,166 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 	std::vector<uvc_ros_driver::FPGACalibration> cams;
 	int stereo_number = 0;
 
-	// TODO: find better way for this, general case not only stereo between
-	// cam0->cam1, cam2->cam3
-	for (int cam = 0; cam < n_cameras_; cam++) {
-		uvc_ros_driver::FPGACalibration camera;
-		camera.projection_model_.type_ =
-			uvc_ros_driver::ProjectionModelTypes::PINHOLE;
-		camera.projection_model_.focal_length_u_ = camParams.FocalLength[cam][0];
-		camera.projection_model_.focal_length_v_ = camParams.FocalLength[cam][1];
-		camera.projection_model_.principal_point_u_ =
-			camParams.PrincipalPoint[cam][0];
-		camera.projection_model_.principal_point_v_ =
-			camParams.PrincipalPoint[cam][1];
-		camera.projection_model_.k1_ = camParams.DistortionCoeffs[cam][0];
-		camera.projection_model_.k2_ = camParams.DistortionCoeffs[cam][1];
-		camera.projection_model_.r1_ = camParams.DistortionCoeffs[cam][2];
-		camera.projection_model_.r2_ = camParams.DistortionCoeffs[cam][3];
+	if (camParams.isValid) {
+		// TODO: find better way for this, general case not only stereo between
+		// cam0->cam1, cam2->cam3
+		for (int cam = 0; cam < n_cameras_; cam++) {
+			uvc_ros_driver::FPGACalibration camera;
+			camera.projection_model_.type_ =
+				uvc_ros_driver::ProjectionModelTypes::PINHOLE;
+			camera.projection_model_.focal_length_u_ = camParams.FocalLength[cam][0];
+			camera.projection_model_.focal_length_v_ = camParams.FocalLength[cam][1];
+			camera.projection_model_.principal_point_u_ =
+				camParams.PrincipalPoint[cam][0];
+			camera.projection_model_.principal_point_v_ =
+				camParams.PrincipalPoint[cam][1];
+			camera.projection_model_.k1_ = camParams.DistortionCoeffs[cam][0];
+			camera.projection_model_.k2_ = camParams.DistortionCoeffs[cam][1];
+			camera.projection_model_.r1_ = camParams.DistortionCoeffs[cam][2];
+			camera.projection_model_.r2_ = camParams.DistortionCoeffs[cam][3];
 
-		if (cam % 2 != 0) {
-			camera.projection_model_.R_[0] =
-				camParams.StereoTransformationMatrix[stereo_number][0][0];
-			camera.projection_model_.R_[1] =
-				camParams.StereoTransformationMatrix[stereo_number][0][1];
-			camera.projection_model_.R_[2] =
-				camParams.StereoTransformationMatrix[stereo_number][0][2];
-			camera.projection_model_.R_[3] =
-				camParams.StereoTransformationMatrix[stereo_number][1][0];
-			camera.projection_model_.R_[4] =
-				camParams.StereoTransformationMatrix[stereo_number][1][1];
-			camera.projection_model_.R_[5] =
-				camParams.StereoTransformationMatrix[stereo_number][1][2];
-			camera.projection_model_.R_[6] =
-				camParams.StereoTransformationMatrix[stereo_number][2][0];
-			camera.projection_model_.R_[7] =
-				camParams.StereoTransformationMatrix[stereo_number][2][1];
-			camera.projection_model_.R_[8] =
-				camParams.StereoTransformationMatrix[stereo_number][2][2];
-			camera.projection_model_.t_[0] =
-				camParams.StereoTransformationMatrix[stereo_number][0][3];
-			camera.projection_model_.t_[1] =
-				camParams.StereoTransformationMatrix[stereo_number][1][3];
-			camera.projection_model_.t_[2] =
-				camParams.StereoTransformationMatrix[stereo_number][2][3];
-			stereo_number++;
+			if (cam % 2 != 0) {
+				camera.projection_model_.R_[0] =
+					camParams.StereoTransformationMatrix[stereo_number][0][0];
+				camera.projection_model_.R_[1] =
+					camParams.StereoTransformationMatrix[stereo_number][0][1];
+				camera.projection_model_.R_[2] =
+					camParams.StereoTransformationMatrix[stereo_number][0][2];
+				camera.projection_model_.R_[3] =
+					camParams.StereoTransformationMatrix[stereo_number][1][0];
+				camera.projection_model_.R_[4] =
+					camParams.StereoTransformationMatrix[stereo_number][1][1];
+				camera.projection_model_.R_[5] =
+					camParams.StereoTransformationMatrix[stereo_number][1][2];
+				camera.projection_model_.R_[6] =
+					camParams.StereoTransformationMatrix[stereo_number][2][0];
+				camera.projection_model_.R_[7] =
+					camParams.StereoTransformationMatrix[stereo_number][2][1];
+				camera.projection_model_.R_[8] =
+					camParams.StereoTransformationMatrix[stereo_number][2][2];
+				camera.projection_model_.t_[0] =
+					camParams.StereoTransformationMatrix[stereo_number][0][3];
+				camera.projection_model_.t_[1] =
+					camParams.StereoTransformationMatrix[stereo_number][1][3];
+				camera.projection_model_.t_[2] =
+					camParams.StereoTransformationMatrix[stereo_number][2][3];
+				stereo_number++;
+
+			} else {
+				camera.projection_model_.R_[0] = 1.0f;
+				camera.projection_model_.R_[1] = 0.0f;
+				camera.projection_model_.R_[2] = 0.0f;
+				camera.projection_model_.R_[3] = 0.0f;
+				camera.projection_model_.R_[4] = 1.0f;
+				camera.projection_model_.R_[5] = 0.0f;
+				camera.projection_model_.R_[6] = 0.0f;
+				camera.projection_model_.R_[7] = 0.0f;
+				camera.projection_model_.R_[8] = 1.0f;
+				camera.projection_model_.t_[0] = 0.0f;
+				camera.projection_model_.t_[1] = 0.0f;
+				camera.projection_model_.t_[2] = 0.0f;
+			}
+
+			cams.push_back(camera);
+		}
+
+		// initialize vectors
+		f_.resize(n_cameras_);
+		p_.resize(n_cameras_);
+		H_.resize(n_cameras_);
+		// pointer at camera info
+		sensor_msgs::CameraInfo *ci;
+
+		// TODO: reimplment this part for multiple stereo base line based systems
+		if (set_calibration_) {
+			for (size_t i = 0; i < homography_mapping_.size(); i++) {
+				// temp structures
+				Eigen::Matrix3d H0;
+				Eigen::Matrix3d H1;
+				double f_new;
+				Eigen::Vector2d p0_new, p1_new;
+
+				std::pair<int, int> indx = homography_mapping_[i];
+
+				StereoHomography h(cams[indx.first], cams[indx.second]);
+				h.getHomography(H0, H1, f_new, p0_new, p1_new);
+
+				f_[indx.first] = f_new;
+				f_[indx.second] = f_new;
+				p_[indx.first] = p0_new;
+				p_[indx.second] = p1_new;
+				// TODO check if matrix is copied or only pointer!!
+				H_[indx.first] = H0;
+				H_[indx.second] = H1;
+			}
+
+			// Set all parameters here
+			for (int i = 0; i < n_cameras_; i++) {
+				sendCameraParam(i, f_[i], f_[i], p_[i], cams[i].projection_model_.k1_,
+						cams[i].projection_model_.k2_,
+						cams[i].projection_model_.r1_,
+						cams[i].projection_model_.r2_, H_[i]);
+				selectCameraInfo(i, &ci);
+				setCameraInfoIntrinsics(*ci, f_[i], f_[i], p_[i](0), p_[i](1));
+				setCameraInfoDistortionMdl(*ci,
+							   uvc_ros_driver::ProjectionModelTypes::PINHOLE);
+				setCameraInfoDistortionParams(*ci, 0, 0, 0, 0, 0);
+			}
 
 		} else {
-			camera.projection_model_.R_[0] = 1.0f;
-			camera.projection_model_.R_[1] = 0.0f;
-			camera.projection_model_.R_[2] = 0.0f;
-			camera.projection_model_.R_[3] = 0.0f;
-			camera.projection_model_.R_[4] = 1.0f;
-			camera.projection_model_.R_[5] = 0.0f;
-			camera.projection_model_.R_[6] = 0.0f;
-			camera.projection_model_.R_[7] = 0.0f;
-			camera.projection_model_.R_[8] = 1.0f;
-			camera.projection_model_.t_[0] = 0.0f;
-			camera.projection_model_.t_[1] = 0.0f;
-			camera.projection_model_.t_[2] = 0.0f;
+			for (int i = 0; i < n_cameras_; i++) {
+				selectCameraInfo(i, &ci);
+				setCameraInfoIntrinsics(
+					*ci, camParams.FocalLength[i][0], camParams.FocalLength[i][1],
+					camParams.PrincipalPoint[i][0], camParams.PrincipalPoint[i][1]);
+				setCameraInfoDistortionMdl(*ci,
+							   uvc_ros_driver::ProjectionModelTypes::PINHOLE);
+				setCameraInfoDistortionParams(
+					*ci, cams[i].projection_model_.k1_, cams[i].projection_model_.k2_,
+					cams[i].projection_model_.r1_, cams[i].projection_model_.r2_, 0);
+			}
 		}
 
-		cams.push_back(camera);
+		// TODO: implement with class variables
+		// SGM stereo penalty values p1: discontinuits, p2:
+		setParam("STEREO_P1_CAM1", 16.0f);
+		setParam("STEREO_P2_CAM1", 250.0f);
+		// disparity L->R occlusion in px
+		setParam("STEREO_LR_CAM1", 4.0f);
+		// threshold 0-255 valid disparity
+		setParam("STEREO_TH_CAM1", 100.0f);
+
+		setParam("STEREO_P1_CAM3", 8.0f);
+		setParam("STEREO_P2_CAM3", 240.0f);
+		setParam("STEREO_LR_CAM3", 4.0f);
+		setParam("STEREO_TH_CAM3", 140.0f);
+
+		setParam("STEREO_P1_CAM5", 8.0f);
+		setParam("STEREO_P2_CAM5", 240.0f);
+		setParam("STEREO_LR_CAM5", 4.0f);
+		setParam("STEREO_TH_CAM5", 140.0f);
+
+		setParam("STEREO_P1_CAM7", 16.0f);
+		setParam("STEREO_P2_CAM7", 250.0f);
+		setParam("STEREO_LR_CAM7", 4.0f);
+		setParam("STEREO_TH_CAM7", 100.0f);
+
+		setParam("CALIB_GAIN", 4300.0f);
+
+		setParam("CAMERA_H_FLIP", float(flip_));
+
+		if (set_calibration_) {
+			setParam("RESETCALIB", 0.0f);
+
+		} else {
+			setParam("RESETCALIB", 1.0f);
+		}
+
+		setParam("SETCALIB", float(set_calibration_));
+
+		setParam("STEREO_ENABLE", float(depth_map_));
 	}
 
-	// initialize vectors
-	f_.resize(n_cameras_);
-	p_.resize(n_cameras_);
-	H_.resize(n_cameras_);
-	// pointer at camera info
-	sensor_msgs::CameraInfo *ci;
-
-	// TODO: reimplment this part for multiple stereo base line based systems
-	if (set_calibration_) {
-		for (size_t i = 0; i < homography_mapping_.size(); i++) {
-			// temp structures
-			Eigen::Matrix3d H0;
-			Eigen::Matrix3d H1;
-			double f_new;
-			Eigen::Vector2d p0_new, p1_new;
-
-			std::pair<int, int> indx = homography_mapping_[i];
-
-			StereoHomography h(cams[indx.first], cams[indx.second]);
-			h.getHomography(H0, H1, f_new, p0_new, p1_new);
-
-			f_[indx.first] = f_new;
-			f_[indx.second] = f_new;
-			p_[indx.first] = p0_new;
-			p_[indx.second] = p1_new;
-			// TODO check if matrix is copied or only pointer!!
-			H_[indx.first] = H0;
-			H_[indx.second] = H1;
-		}
-
-		// Set all parameters here
-		for (int i = 0; i < n_cameras_; i++) {
-			sendCameraParam(i, f_[i], f_[i], p_[i], cams[i].projection_model_.k1_,
-					cams[i].projection_model_.k2_,
-					cams[i].projection_model_.r1_,
-					cams[i].projection_model_.r2_, H_[i]);
-			selectCameraInfo(i, &ci);
-			setCameraInfoIntrinsics(*ci, f_[i], f_[i], p_[i](0), p_[i](1));
-			setCameraInfoDistortionMdl(*ci,
-						   uvc_ros_driver::ProjectionModelTypes::PINHOLE);
-			setCameraInfoDistortionParams(*ci, 0, 0, 0, 0, 0);
-		}
-
-	} else {
-		for (int i = 0; i < n_cameras_; i++) {
-			selectCameraInfo(i, &ci);
-			setCameraInfoIntrinsics(
-				*ci, camParams.FocalLength[i][0], camParams.FocalLength[i][1],
-				camParams.PrincipalPoint[i][0], camParams.PrincipalPoint[i][1]);
-			setCameraInfoDistortionMdl(*ci,
-						   uvc_ros_driver::ProjectionModelTypes::PINHOLE);
-			setCameraInfoDistortionParams(
-				*ci, cams[i].projection_model_.k1_, cams[i].projection_model_.k2_,
-				cams[i].projection_model_.r1_, cams[i].projection_model_.r2_, 0);
-		}
-	}
-
-	// TODO: implement with class variables
-	// SGM stereo penalty values p1: discontinuits, p2:
-	setParam("STEREO_P1_CAM1", 16.0f);
-	setParam("STEREO_P2_CAM1", 250.0f);
-	// disparity L->R occlusion in px
-	setParam("STEREO_LR_CAM1", 4.0f);
-	// threshold 0-255 valid disparity
-	setParam("STEREO_TH_CAM1", 100.0f);
-
-	setParam("STEREO_P1_CAM3", 8.0f);
-	setParam("STEREO_P2_CAM3", 240.0f);
-	setParam("STEREO_LR_CAM3", 4.0f);
-	setParam("STEREO_TH_CAM3", 140.0f);
-
-	setParam("STEREO_P1_CAM5", 8.0f);
-	setParam("STEREO_P2_CAM5", 240.0f);
-	setParam("STEREO_LR_CAM5", 4.0f);
-	setParam("STEREO_TH_CAM5", 140.0f);
-
-	setParam("STEREO_P1_CAM7", 16.0f);
-	setParam("STEREO_P2_CAM7", 250.0f);
-	setParam("STEREO_LR_CAM7", 4.0f);
-	setParam("STEREO_TH_CAM7", 100.0f);
-
-	setParam("CALIB_GAIN", 4300.0f);
-
-	setParam("CAMERA_H_FLIP", float(flip_));
-
-	if (set_calibration_) {
-		setParam("RESETCALIB", 0.0f);
-
-	} else {
-		setParam("RESETCALIB", 1.0f);
-	}
-
-	setParam("SETCALIB", float(set_calibration_));
-
-	setParam("STEREO_ENABLE", float(depth_map_));
 	// std::cout << "Configuring cameras..." << std::endl;
 	setParam("RESETMT9V034", 1.0f);
 	// sleep(5);  // needed, fpga reconfigure cameras and restart time
