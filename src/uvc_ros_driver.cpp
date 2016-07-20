@@ -762,7 +762,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 		// time, so the image time stamp should be set to the first camera pair
 		msg_vio.header.stamp = frame_time_;
 		msg_vio.left_image.header.stamp = frame_time_;
-		msg_vio.left_image.header.stamp = frame_time_;
+		msg_vio.right_image.header.stamp = frame_time_;
 		// set frame_id on images
 		msg_vio.left_image.header.frame_id = "cam_2_optical_frame";
 		msg_vio.right_image.header.frame_id = "cam_3_optical_frame";
@@ -789,7 +789,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 	if (cam_id == 2 && frameCounter_ % modulo_ == 0) {  // select_cam = 4 + 5
 		msg_vio.header.stamp = frame_time_;
 		msg_vio.left_image.header.stamp = frame_time_;
-		msg_vio.left_image.header.stamp = frame_time_;
+		msg_vio.right_image.header.stamp = frame_time_;
 		// set frame_id on images
 		msg_vio.left_image.header.frame_id = "cam_4_optical_frame";
 		msg_vio.right_image.header.frame_id = "cam_5_optical_frame";
@@ -816,7 +816,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 	if (cam_id == 3 && frameCounter_ % modulo_ == 0) {  // select_cam = 6 + 7
 		msg_vio.header.stamp = frame_time_;
 		msg_vio.left_image.header.stamp = frame_time_;
-		msg_vio.left_image.header.stamp = frame_time_;
+		msg_vio.right_image.header.stamp = frame_time_;
 		// set frame_id on images
 		msg_vio.left_image.header.frame_id = "cam_6_optical_frame";
 		msg_vio.right_image.header.frame_id = "cam_7_optical_frame";
@@ -843,7 +843,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 	if (cam_id == 4 && frameCounter_ % modulo_ == 0) {  // select_cam = 8 + 9
 		msg_vio.header.stamp = frame_time_;
 		msg_vio.left_image.header.stamp = frame_time_;
-		msg_vio.left_image.header.stamp = frame_time_;
+		msg_vio.right_image.header.stamp = frame_time_;
 		// set frame_id on images
 		msg_vio.left_image.header.frame_id = "cam_8_optical_frame";
 		msg_vio.right_image.header.frame_id = "cam_9_optical_frame";
