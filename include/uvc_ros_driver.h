@@ -121,6 +121,9 @@ private:
 	// time
 	ros::Time past_;
 	ros::Time frame_time_;
+	ros::Time start_offset_;
+	uint32_t time_wrapper_check_frame_ = 0.0;
+	uint32_t time_wrapper_check_line_ = 0.0;
 	// image publishers
 	ros::Publisher cam_0_pub_;
 	ros::Publisher cam_0_info_pub_;
