@@ -375,8 +375,8 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 						cams[i].projection_model_.r2_, H_[i]);
 				selectCameraInfo(i, &ci);
 				setCameraInfoIntrinsics(*ci, f_[i], f_[i], p_[i](0), p_[i](1));
-				setCameraInfoDistortionMdl(*ci,
-							   uvc_ros_driver::ProjectionModelTypes::PINHOLE);
+				setCameraInfoDistortionMdl(
+					*ci, uvc_ros_driver::ProjectionModelTypes::PINHOLE);
 				setCameraInfoDistortionParams(*ci, 0, 0, 0, 0, 0);
 			}
 
@@ -386,8 +386,8 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 				setCameraInfoIntrinsics(
 					*ci, camParams.FocalLength[i][0], camParams.FocalLength[i][1],
 					camParams.PrincipalPoint[i][0], camParams.PrincipalPoint[i][1]);
-				setCameraInfoDistortionMdl(*ci,
-							   uvc_ros_driver::ProjectionModelTypes::PINHOLE);
+				setCameraInfoDistortionMdl(
+					*ci, uvc_ros_driver::ProjectionModelTypes::PINHOLE);
 				setCameraInfoDistortionParams(
 					*ci, cams[i].projection_model_.k1_, cams[i].projection_model_.k2_,
 					cams[i].projection_model_.r1_, cams[i].projection_model_.r2_, 0);
@@ -421,18 +421,18 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 		setParam("CALIB_GAIN", 4300.0f);
 
 		setParam("CAMERA_H_FLIP", float(flip_));
-
-		if (set_calibration_) {
-			setParam("RESETCALIB", 0.0f);
-
-		} else {
-			setParam("RESETCALIB", 1.0f);
-		}
-
-		setParam("SETCALIB", float(set_calibration_));
-
-		setParam("STEREO_ENABLE", float(depth_map_));
 	}
+
+	if (set_calibration_) {
+		setParam("RESETCALIB", 0.0f);
+
+	} else {
+		setParam("RESETCALIB", 1.0f);
+	}
+
+	setParam("SETCALIB", float(set_calibration_));
+
+	setParam("STEREO_ENABLE", float(depth_map_));
 
 	// std::cout << "Configuring cameras..." << std::endl;
 	setParam("RESETMT9V034", 1.0f);
