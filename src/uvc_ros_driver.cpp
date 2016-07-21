@@ -831,7 +831,8 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 	if (cam_id == 0) {  // select_cam = 0 + 1
 		frame_time_ = fpga_frame_time;
 		frameCounter_++;
-		// set frame_id on images
+		// set frame_id on images and on msg_vio
+		msg_vio.header.stamp = frame_time_;
 		msg_vio.left_image.header.frame_id = "cam_0_optical_frame";
 		msg_vio.right_image.header.frame_id = "cam_1_optical_frame";
 
