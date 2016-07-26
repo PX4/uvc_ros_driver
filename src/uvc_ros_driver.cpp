@@ -60,6 +60,7 @@ static bool myPairMax(std::pair<int, int> p, std::pair<int, int> p1)
 uvcROSDriver::~uvcROSDriver()
 {
 	setParam("CAMERA_ENABLE", 0.0f);
+	sleep(0.5);
 	uvc_stop_streaming(devh_);
 	// close serial port
 	sp_.close_serial();
@@ -86,22 +87,42 @@ void uvcROSDriver::initDevice()
 		case 10:
 			stereo_vio_5_pub_ = nh_.advertise<ait_ros_messages::VioSensorMsg>(
 						    node_name_ + "/vio_sensor_4", 5);
+			cam_9_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
+						  node_name_ + "/cam_9/camera_info", 5);
+			cam_8_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
+						  node_name_ + "/cam_8/camera_info", 5);
 
 		case 8:
 			stereo_vio_4_pub_ = nh_.advertise<ait_ros_messages::VioSensorMsg>(
 						    node_name_ + "/vio_sensor_3", 5);
+			cam_7_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
+						  node_name_ + "/cam_7/camera_info", 5);
+			cam_6_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
+						  node_name_ + "/cam_6/camera_info", 5);
 
 		case 6:
 			stereo_vio_3_pub_ = nh_.advertise<ait_ros_messages::VioSensorMsg>(
 						    node_name_ + "/vio_sensor_2", 5);
+			cam_5_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
+						  node_name_ + "/cam_5/camera_info", 5);
+			cam_4_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
+						  node_name_ + "/cam_4/camera_info", 5);
 
 		case 4:
 			stereo_vio_2_pub_ = nh_.advertise<ait_ros_messages::VioSensorMsg>(
 						    node_name_ + "/vio_sensor_1", 5);
+			cam_3_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
+						  node_name_ + "/cam_3/camera_info", 5);
+			cam_2_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
+						  node_name_ + "/cam_2/camera_info", 5);
 
 		default:
 			stereo_vio_1_pub_ = nh_.advertise<ait_ros_messages::VioSensorMsg>(
 						    node_name_ + "/vio_sensor_0", 5);
+			cam_1_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
+						  node_name_ + "/cam_1/camera_info", 5);
+			cam_0_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
+						  node_name_ + "/cam_0/camera_info", 5);
 		}
 
 	} else {
@@ -190,6 +211,7 @@ void uvcROSDriver::startDevice()
 		uvc_error_t res = initAndOpenUvc();
 		// start stream
 		past_ = ros::Time::now();
+		start_offset_ = ros::Time::now();
 		res = uvc_start_streaming(devh_, &ctrl_, &callback, this, 0);
 		setParam("CAMERA_ENABLE", float(camera_config_));
 
@@ -634,16 +656,47 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 
 	// flag
 	uvc_cb_flag_ = true;
-	ros::Time now = ros::Time::now();
+
+	// delay from exposure to readout of 1st line is 9ms
+	static ros::Duration time_offset_frame(0.009);
+
+	static ros::Time fpga_frame_time = start_offset_ - time_offset_frame;
+	static ros::Time fpga_line_time = start_offset_;
+	ros::Duration fpga_time_add(0.0);
+
 	ait_ros_messages::VioSensorMsg msg_vio;
 	sensor_msgs::Imu msg_imu;
 
 	unsigned frame_size = frame->height * frame->width * 2;
 
 	// read the IMU data
-	// int16_t zero = 0;
 	uint16_t cam_id = 0;
 	static uint16_t count_prev;
+
+	// read out micro second timestamp of 1st line
+	uint16_t timestamp_upper =
+		((static_cast<uint16_t *>(frame->data)[int((1) * frame->width - 10)]) >>
+		 8) +
+		(((static_cast<uint16_t *>(frame->data)[int((1) * frame->width - 10)]) &
+		  255)
+		 << 8);
+	uint16_t timestamp_lower =
+		((static_cast<uint16_t *>(frame->data)[int((1) * frame->width - 9)]) >>
+		 8) +
+		(((static_cast<uint16_t *>(frame->data)[int((1) * frame->width - 9)]) &
+		  255)
+		 << 8);
+	uint32_t timestamp =
+		(((uint32_t)(timestamp_upper)) << 16) + (uint32_t)(timestamp_lower);
+
+	// wrap around is automatically handled by underflow of uint16_t values
+	fpga_time_add = ros::Duration(
+				(double(timestamp - time_wrapper_check_frame_)) / 1000000.0);
+	time_wrapper_check_frame_ = timestamp;
+
+	// frame time is timestamp of 1st line + offset_start - offset_frame from
+	// exposure to readout of 1st line
+	fpga_frame_time = fpga_frame_time + fpga_time_add;
 
 	for (unsigned i = 0; i < frame->height; i++) {
 
@@ -655,8 +708,8 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 			cam_id = count >> 14;
 		}
 
-		// double temp  = double(ShortSwap(static_cast<int16_t
-		// *>(frame->data)[int((i + 1) * frame->width - 8 + 1)]));
+		double temperature = double(ShortSwap(static_cast<int16_t *>(
+				frame->data)[int((i + 1) * frame->width - 8 + 1)]));
 
 		double acc_x = double(ShortSwap(static_cast<int16_t *>(
 							frame->data)[int((i + 1) * frame->width - 8 + 2)])) /
@@ -681,6 +734,32 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 						 frame->data)[int((i + 1) * frame->width - 8 + 7)]) /
 			       (gyr_scale_factor / deg2rad));
 
+		// read out micro second timestamp of corresponding line
+		timestamp_upper = ((static_cast<uint16_t *>(
+					    frame->data)[int((i + 1) * frame->width - 10)]) >>
+				   8) +
+				  (((static_cast<uint16_t *>(
+					     frame->data)[int((i + 1) * frame->width - 10)]) &
+				    255)
+				   << 8);
+		timestamp_lower = ((static_cast<uint16_t *>(
+					    frame->data)[int((i + 1) * frame->width - 9)]) >>
+				   8) +
+				  (((static_cast<uint16_t *>(
+					     frame->data)[int((i + 1) * frame->width - 9)]) &
+				    255)
+				   << 8);
+		timestamp =
+			(((uint32_t)(timestamp_upper)) << 16) + (uint32_t)(timestamp_lower);
+
+		// wrap around is automatically handled by underflow of uint16_t values
+		fpga_time_add =
+			ros::Duration(double(timestamp - time_wrapper_check_line_) / 1000000.0);
+		time_wrapper_check_line_ = timestamp;
+
+		// line time is timestamp of current line + offset_start
+		fpga_line_time = fpga_line_time + fpga_time_add;
+
 		if (!(count == count_prev)) {
 
 			if (flip_) {
@@ -703,8 +782,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 				msg_imu.angular_velocity.z = -gyr_z;
 			}
 
-			msg_imu.header.stamp =
-				past_ + (now - past_) * (double(i) / frame->height);
+			msg_imu.header.stamp = fpga_line_time;
 
 			msg_vio.imu.push_back(msg_imu);
 
@@ -714,13 +792,14 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 		}
 	}
 
-	// linearly interpolate the time stamps of the imu messages
-	ros::Duration elapsed = now - past_;
-	past_ = now;
+	ros::Duration elapsed = fpga_frame_time - past_;
+	past_ = fpga_frame_time;
 
 	printf("camera id: %d   ", cam_id);
-	printf("time elapsed: %f   ", elapsed.toSec());
-	printf("framerate: %f   ", 1.0f / elapsed.toSec());
+	printf("timestamp fpga: %f   ", fpga_frame_time.toSec() -
+	       start_offset_.toSec() +
+	       time_offset_frame.toSec());
+	printf("framerate: %f   ", 1.0 / elapsed.toSec());
 	printf("%lu imu messages\n", msg_vio.imu.size());
 
 	// temp container for the 2 images
@@ -737,7 +816,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 			       frame->width - 16,  // stepSize
 			       left);
 
-	msg_vio.left_image.header.stamp = now;
+	msg_vio.left_image.header.stamp = fpga_frame_time;
 
 	sensor_msgs::fillImage(msg_vio.right_image,
 			       sensor_msgs::image_encodings::MONO8,
@@ -746,13 +825,14 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 			       frame->width - 16,  // stepSize
 			       right);
 
-	msg_vio.right_image.header.stamp = now;
+	msg_vio.right_image.header.stamp = fpga_frame_time;
 
 	// publish data
 	if (cam_id == 0) {  // select_cam = 0 + 1
-		frame_time_ = now;
+		frame_time_ = fpga_frame_time;
 		frameCounter_++;
-		// set frame_id on images
+		// set frame_id on images and on msg_vio
+		msg_vio.header.stamp = frame_time_;
 		msg_vio.left_image.header.frame_id = "cam_0_optical_frame";
 		msg_vio.right_image.header.frame_id = "cam_1_optical_frame";
 
