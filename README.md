@@ -37,41 +37,17 @@ Build using `catkin_make` according to the ROS instructions on http://ros.org.
 
 ## Set up Permissions
 
-Ubuntu comes with a serial modem manager which interferes heavily with any robotics related use of a serial port (or USB serial). It can deinstalled without side effects:
-```bash
-sudo apt-get remove modemmanager
-```
-
 To get proper permissions for the USB device, run the following script with the device attached:
 ```bash
-sudo usermod -a -G dialout $USER
-sudo ./fix_permissions.sh
+sudo ./install.sh
 ```
-Check the device vendor and product id from the list and enter them when prompted. The printed list has the format
-`... {idVendor:idProduct} ...`.
-
 Log out of Ubuntu and Log back in. Unplug the device and plug it back in to load it with the new permissions.
 
-## Set up Permissions on Odroid-XU4
-
-To set up the permissions for the USB device on the Odroid, run this script:
-```bash
-sudo usermod -a -G dialout $USER
-sudo ./fix_permissions_odroid.sh
-```
-Check the device vendor and product id from the list and enter them when prompted. The printed list has the format
-`... {idVendor:idProduct} ...`.
 
 # Running the driver
 ```bash
 roslaunch uvc_ros_driver uvc_ros_driver.launch
 ```
-To flip the images horizontally, appropriately change the ros parameter defined in the launch file.
 
-The stereo images and IMU messages will be published on the topic `/vio_sensor` as a `VioSensorMsg` defined in the `ait_ros_messages` package.
+The camera images and IMU messages will be published on the topic `/uvc_ros_driver_node/cam_0/image_raw` and `/vio_imu`
 
-If you need the images and IMU messages seperately, you can run
-```bash
-rosrun ait_ros_messages vio_sensor_republisher.py
-```
-This will publish the images and IMUs on the topics `/left_image`, `/right_image`, `/imu`, respectively.
