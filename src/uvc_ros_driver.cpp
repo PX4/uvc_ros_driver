@@ -51,6 +51,12 @@ static void callback(uvc_frame *frame, void *arg)
 	obj->uvc_cb(frame);
 }
 
+static bool myPairMax(std::pair<int, int> p, std::pair<int, int> p1)
+{
+	// gratest value is supposed be on the second index
+	return p.second < p1.second;
+}
+
 uvcROSDriver::~uvcROSDriver()
 {
 	setParam("CAMERA_ENABLE", 0.0f);
@@ -343,10 +349,21 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 		H_.resize(n_cameras_);
 		// pointer at camera info
 		sensor_msgs::CameraInfo *ci;
+		size_t homography_size;
 
 		// TODO: reimplment this part for multiple stereo base line based systems
 		if (set_calibration_) {
-			for (size_t i = 0; i < homography_mapping_.size(); i++) {
+			std::vector<std::pair<int, int> >::iterator it_homography =
+				std::max_element(homography_mapping_.begin(), homography_mapping_.end(),
+						 myPairMax);
+			if ((*it_homography).second > n_cameras_) {
+				homography_size = std::distance(homography_mapping_.begin(), it_homography);
+
+			} else {
+				homography_size = homography_mapping_.size();
+			}
+
+			for (size_t i = 0; i < homography_size; i++) {
 				// temp structures
 				Eigen::Matrix3d H0;
 				Eigen::Matrix3d H1;
@@ -624,7 +641,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 	unsigned frame_size = frame->height * frame->width * 2;
 
 	// read the IMU data
-	int16_t zero = 0;
+	// int16_t zero = 0;
 	uint16_t cam_id = 0;
 	static uint16_t count_prev;
 

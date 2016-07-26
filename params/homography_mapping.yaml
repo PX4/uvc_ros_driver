@@ -1,1 +1,3 @@
-homography_mapping: [[0,1]]
+# place here the mapping between cameras from low to high numbers
+# ex: [[0,1],[2,3],[4,5]]
+homography_mapping: [[0,1], [2,3]]
