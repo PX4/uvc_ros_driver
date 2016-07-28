@@ -22,7 +22,7 @@
     <param name="numberOfCameras" type="int"  value="$(arg numberOfCameras)" />
     <param name="AITMsgs" type="bool"  value="$(arg AITMsgs)" />
     <param name="setCalibration" type="bool"  value="$(arg setCalibration)" />
-    <param name="calibrationMode" type="int"  value="$(arg calibrationMode)" />
+    <param name="calibrationMode" type="bool"  value="$(arg calibrationMode)" />
     <param name="depthMap" type="bool"  value="$(arg depthMap)" />
     <param name="cameraConfig" type="int"  value="$(arg cameraConfig)" />
     <param name="cameraConfigFile" type="string"  value="$(arg cameraConfigFile)" />

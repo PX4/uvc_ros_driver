@@ -289,7 +289,7 @@ public:
 
 		// update modulo_ variable also
 		if (calibration_mode != 0) {
-			modulo_ = 12 / calibration_mode;
+			modulo_ = 12;
 		}
 	};
 };
