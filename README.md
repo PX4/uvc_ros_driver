@@ -1,7 +1,5 @@
 <img src="https://raw.github.com/wiki/PX4/uvc_ros_driver/images/omni_rig.jpeg" width="300" height="250" />
 
-##Introduction
-
 ## Introduction
 [uvc_ros_driver](https://github.com/PX4/uvc_ros_driver/wiki) is a ROS package that publishes video streams from USB video devices. It is made for devices that send multiple grayscale images as well as IMU data encoded in a color image stream. The current hardware is a composite usb device with three interfaces:
 
