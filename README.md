@@ -1,53 +1,20 @@
-`uvc_ros_driver` is a ROS package that publishes video streams from USB video devices. It is made for devices that send multiple grayscale images as well as IMU data encoded in a color image stream.
+<img src="https://raw.github.com/wiki/PX4/uvc_ros_driver/images/omni_rig.jpeg" width="300" height="250" />
 
-# Prerequisites
-You will need [ROS indigo](http://wiki.ros.org/indigo/Installation/Ubuntu) and the [`ait_ros_messages`](https://github.com/ethz-ait/ait_ros_messages) ROS package.
+##Introduction
 
-You need `libusb` installed:
+## Introduction
+[uvc_ros_driver](https://github.com/PX4/uvc_ros_driver/wiki) is a ROS package that publishes video streams from USB video devices. It is made for devices that send multiple grayscale images as well as IMU data encoded in a color image stream. The current hardware is a composite usb device with three interfaces:
 
-```bash
-sudo apt-get install libusb-1.0-0-dev
-```
+1. [USB Video Device](https://en.wikipedia.org/wiki/USB_video_device_class)
+2. [Communication Device](https://en.wikipedia.org/wiki/USB_communications_device_class)
+3. [Mass Storage Device](https://en.wikipedia.org/wiki/USB_mass_storage_device_class)
 
-You also need [`libuvc`](https://github.com/ktossell/libuvc), which can be installed with the following commands:
-```bash
-git clone https://github.com/ktossell/libuvc
-cd libuvc
-mkdir build
-cd build
-cmake ..
-make && sudo make install
-```
-
-# Installation
-Clone this repository in your catkin workspace.
-
-## MAVLink Submodule
-
-This package depends on MAVLink. To initialize and check out the submodule, run this:
-
-```bash
-git submodule init
-git submodule update --recursive
-```
-
-## Building
-
-Build using `catkin_make` according to the ROS instructions on http://ros.org.
-
-## Set up Permissions
-
-To get proper permissions for the USB device, run the following script with the device attached:
-```bash
-sudo ./install.sh
-```
-Log out of Ubuntu and Log back in. Unplug the device and plug it back in to load it with the new permissions.
+**Please find more informations on the [wiki pages](https://github.com/PX4/uvc_ros_driver/wiki) of this repository**
 
 
-# Running the driver
-```bash
-roslaunch uvc_ros_driver uvc_ros_driver.launch
-```
-
-The camera images and IMU messages will be published on the topic `/uvc_ros_driver_node/cam_0/image_raw` and `/vio_imu`
-
+## Authors
+* Dominik Honegger ([email](dominik.honegger@inf.ethz.ch))
+* Lorenz Meier ([email](lorenz.meier@inf.ethz.ch))
+* Nicolas de Palézieux ([email](depnicol@ethz.ch))
+* Christoph Tobler ([email](toblech@ethz.ch))
+* Simone Guscetti ([email](simonegu@ethz.ch))
