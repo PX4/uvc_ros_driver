@@ -213,15 +213,14 @@ void uvcROSDriver::startDevice()
 		past_ = ros::Time::now();
 		start_offset_ = ros::Time::now();
 		res = uvc_start_streaming(devh_, &ctrl_, &callback, this, 0);
-		setParam("CAMERA_ENABLE", float(camera_config_));
-
-		while (!uvc_cb_flag_ && ros::ok()) {
-			printf("retry start streaming...\n");
-			uvc_stop_streaming(devh_);
-			res = uvc_start_streaming(devh_, &ctrl_, &callback, this, 0);
-			usleep(200000);
-			// std::cout << "res: " << res << std::endl;
+		if (res != UVC_SUCCESS) {
+			ROS_ERROR("Unable to start stream");
+			// TODO: restart node if streaming fails?
+			ros::shutdown();
+			return;
 		}
+		setParam("CAMERA_ENABLE", float(camera_config_));
+		ROS_INFO("Starting stream ...");
 
 	} else {
 		ROS_ERROR("Device not initialized!");
