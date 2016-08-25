@@ -60,7 +60,7 @@ static bool myPairMax(std::pair<int, int> p, std::pair<int, int> p1)
 uvcROSDriver::~uvcROSDriver()
 {
 	setParam("CAMERA_ENABLE", 0.0f);
-	sleep(0.5);
+	sleep(1.0); 
 	uvc_stop_streaming(devh_);
 	// close serial port
 	sp_.close_serial();
@@ -79,8 +79,16 @@ void uvcROSDriver::initDevice()
 	// initialize serial port
 	// sp_ = Serial_Port("/dev/ttyUSB0", 115200);
 	sp_ = Serial_Port("/dev/serial/by-id/usb-Cypress_FX3-if02", 115200);
-	sp_.open_serial();
-
+	try
+	{
+		sp_.open_serial();
+	}
+	catch (int ex)
+	{
+		printf("Threw %d, try another port\n", ex);
+		sp_ = Serial_Port("/dev/serial/by-id/usb-Cypress_FX3-if03-port0", 115200);
+		sp_.open_serial();
+	}
 	if (enable_ait_vio_msg_) {
 		// initialize vio msgs publishers
 		switch (n_cameras_) {
@@ -213,15 +221,14 @@ void uvcROSDriver::startDevice()
 		past_ = ros::Time::now();
 		start_offset_ = ros::Time::now();
 		res = uvc_start_streaming(devh_, &ctrl_, &callback, this, 0);
-		setParam("CAMERA_ENABLE", float(camera_config_));
-
-		while (!uvc_cb_flag_ && ros::ok()) {
-			printf("retry start streaming...\n");
-			uvc_stop_streaming(devh_);
-			res = uvc_start_streaming(devh_, &ctrl_, &callback, this, 0);
-			usleep(200000);
-			// std::cout << "res: " << res << std::endl;
+		if (res != UVC_SUCCESS) {
+			ROS_ERROR("Unable to start stream");
+			// TODO: restart node if streaming fails?
+			ros::shutdown();
+			return;
 		}
+		setParam("CAMERA_ENABLE", float(camera_config_));
+		ROS_INFO("Starting stream ...");
 
 	} else {
 		ROS_ERROR("Device not initialized!");
@@ -500,7 +507,7 @@ uvc_error_t uvcROSDriver::initAndOpenUvc()
 
 	/* Locates the first attached UVC device, stores in dev */
 	/* filter devices: vendor_id, product_id, "serial_num" */
-	res = uvc_find_device(ctx_, &dev_, 0x04b4, 0, NULL);
+	res = uvc_find_device(ctx_, &dev_, 0x04b4, 0x00f8, NULL);
 
 	if (res < 0) {
 		uvc_perror(res, "uvc_find_device"); /* no devices found */
