@@ -500,7 +500,7 @@ uvc_error_t uvcROSDriver::initAndOpenUvc()
 
 	/* Locates the first attached UVC device, stores in dev */
 	/* filter devices: vendor_id, product_id, "serial_num" */
-	res = uvc_find_device(ctx_, &dev_, 0x04b4, 0, NULL);
+	res = uvc_find_device(ctx_, &dev_, 0x04b4, 0x00f8, NULL);
 
 	if (res < 0) {
 		uvc_perror(res, "uvc_find_device"); /* no devices found */
