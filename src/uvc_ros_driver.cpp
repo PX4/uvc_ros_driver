@@ -60,7 +60,7 @@ static bool myPairMax(std::pair<int, int> p, std::pair<int, int> p1)
 uvcROSDriver::~uvcROSDriver()
 {
 	setParam("CAMERA_ENABLE", 0.0f);
-	sleep(0.5);
+	sleep(1.0); 
 	uvc_stop_streaming(devh_);
 	// close serial port
 	sp_.close_serial();
@@ -79,8 +79,16 @@ void uvcROSDriver::initDevice()
 	// initialize serial port
 	// sp_ = Serial_Port("/dev/ttyUSB0", 115200);
 	sp_ = Serial_Port("/dev/serial/by-id/usb-Cypress_FX3-if02", 115200);
-	sp_.open_serial();
-
+	try
+	{
+		sp_.open_serial();
+	}
+	catch (int ex)
+	{
+		printf("Threw %d, try another port\n", ex);
+		sp_ = Serial_Port("/dev/serial/by-id/usb-Cypress_FX3-if03-port0", 115200);
+		sp_.open_serial();
+	}
 	if (enable_ait_vio_msg_) {
 		// initialize vio msgs publishers
 		switch (n_cameras_) {
