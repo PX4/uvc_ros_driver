@@ -82,6 +82,7 @@ private:
 	bool depth_map_ = false;
 	bool set_calibration_ = false;
 	bool uvc_cb_flag_ = false;
+	bool first_imu_received_flag_ = false;
 
 	int n_cameras_ = 2;
 	int camera_config_ = 1;
@@ -93,7 +94,8 @@ private:
 	int modulo_ = 1;
 	int calibration_mode_ = 0;
 
-	ros::Duration imu_dt_ = ros::Duration(0.001);
+	ros::Duration imu_dt_ = ros::Duration(0.0);
+  ros::Time timestamp_prev_imu_msg_;
 
 	// TODO: add other camera parameters
 	// float ....

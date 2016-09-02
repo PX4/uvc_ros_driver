@@ -700,7 +700,6 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 
 	unsigned int imu_msg_counter_in_frame = 0;
 	ros::Time timestamp_second_imu_msg_in_frame;
-	ros::Time timestamp_prev_imu_msg;
 
 	for (unsigned i = 0; i < frame->height; i++) {
 
@@ -756,6 +755,19 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 		timestamp =
 			(((uint32_t)(timestamp_upper)) << 16) + (uint32_t)(timestamp_lower);
 
+
+		if(first_imu_received_flag_ == false) {
+      // wrap around is automatically handled by underflow of uint16_t values
+      fpga_time_add =
+        ros::Duration(double(timestamp - time_wrapper_check_line_) / 1000000.0);
+      time_wrapper_check_line_ = timestamp;
+
+      // line time is timestamp of current line + offset_start
+      fpga_line_time = fpga_line_time + fpga_time_add;
+      first_imu_received_flag_ == true;
+      timestamp_prev_imu_msg_ = fpga_line_time;
+		}
+
 		if(imu_msg_counter_in_frame > 0)
 		{
       // wrap around is automatically handled by underflow of uint16_t values
@@ -767,13 +779,13 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
       fpga_line_time = fpga_line_time + fpga_time_add;
 		} else {
 		  // for the first imu message in an image take the previous imu msg timestamp and add imu sampling time.
-		  fpga_line_time = timestamp_prev_imu_msg + imu_dt_;
+		  fpga_line_time = timestamp_prev_imu_msg_ + imu_dt_;
 		}
 
 		if (!(count == count_prev)) {
 		  ++imu_msg_counter_in_frame;
 
-		  timestamp_prev_imu_msg = fpga_line_time;
+		  timestamp_prev_imu_msg_ = fpga_line_time;
 		  if(imu_msg_counter_in_frame == 2) {
 		    timestamp_second_imu_msg_in_frame = fpga_line_time;
 		  }
@@ -809,7 +821,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 	}
 
 	if(imu_msg_counter_in_frame > 3) {
-    const ros::Duration diff_timestamps_imu = timestamp_prev_imu_msg - timestamp_second_imu_msg_in_frame;
+    const ros::Duration diff_timestamps_imu = timestamp_prev_imu_msg_ - timestamp_second_imu_msg_in_frame;
     imu_dt_.fromSec(diff_timestamps_imu.toSec() / (imu_msg_counter_in_frame - 1));
 	}
 
