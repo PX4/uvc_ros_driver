@@ -764,7 +764,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 
       // line time is timestamp of current line + offset_start
       fpga_line_time = fpga_line_time + fpga_time_add;
-      first_imu_received_flag_ == true;
+      first_imu_received_flag_ = true;
       timestamp_prev_imu_msg_ = fpga_line_time;
 		}
 
