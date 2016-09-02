@@ -671,7 +671,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 
 	// read the IMU data
 	uint16_t cam_id = 0;
-	static uint16_t count_prev;
+	static uint16_t count_prev = 0;
 
 	// read out micro second timestamp of 1st line
 	uint16_t timestamp_upper =
@@ -697,6 +697,10 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 	// frame time is timestamp of 1st line + offset_start - offset_frame from
 	// exposure to readout of 1st line
 	fpga_frame_time = fpga_frame_time + fpga_time_add;
+
+	unsigned int imu_msg_counter_in_frame = 0;
+	ros::Time timestamp_second_imu_msg_in_frame;
+	ros::Time timestamp_prev_imu_msg;
 
 	for (unsigned i = 0; i < frame->height; i++) {
 
@@ -752,15 +756,27 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 		timestamp =
 			(((uint32_t)(timestamp_upper)) << 16) + (uint32_t)(timestamp_lower);
 
-		// wrap around is automatically handled by underflow of uint16_t values
-		fpga_time_add =
-			ros::Duration(double(timestamp - time_wrapper_check_line_) / 1000000.0);
-		time_wrapper_check_line_ = timestamp;
+		if(imu_msg_counter_in_frame > 0)
+		{
+      // wrap around is automatically handled by underflow of uint16_t values
+      fpga_time_add =
+        ros::Duration(double(timestamp - time_wrapper_check_line_) / 1000000.0);
+      time_wrapper_check_line_ = timestamp;
 
-		// line time is timestamp of current line + offset_start
-		fpga_line_time = fpga_line_time + fpga_time_add;
+      // line time is timestamp of current line + offset_start
+      fpga_line_time = fpga_line_time + fpga_time_add;
+		} else {
+		  // for the first imu message in an image take the previous imu msg timestamp and add imu sampling time.
+		  fpga_line_time = timestamp_prev_imu_msg + imu_dt_;
+		}
 
 		if (!(count == count_prev)) {
+		  ++imu_msg_counter_in_frame;
+
+		  timestamp_prev_imu_msg = fpga_line_time;
+		  if(imu_msg_counter_in_frame == 2) {
+		    timestamp_second_imu_msg_in_frame = fpga_line_time;
+		  }
 
 			if (flip_) {
 				msg_imu.linear_acceleration.x = acc_y;
@@ -790,6 +806,11 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 
 			count_prev = count;
 		}
+	}
+
+	if(imu_msg_counter_in_frame > 3) {
+    const ros::Duration diff_timestamps_imu = timestamp_prev_imu_msg - timestamp_second_imu_msg_in_frame;
+    imu_dt_.fromSec(diff_timestamps_imu.toSec() / (imu_msg_counter_in_frame - 1));
 	}
 
 	ros::Duration elapsed = fpga_frame_time - past_;

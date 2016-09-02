@@ -93,6 +93,8 @@ private:
 	int modulo_ = 1;
 	int calibration_mode_ = 0;
 
+	ros::Duration imu_dt_ = ros::Duration(0.001);
+
 	// TODO: add other camera parameters
 	// float ....
 
