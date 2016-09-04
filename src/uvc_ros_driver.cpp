@@ -755,8 +755,6 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 		timestamp =
 		    (((uint32_t)(timestamp_upper)) << 16) + (uint32_t)(timestamp_lower);
 
-
-
 		// wrap around is automatically handled by underflow of uint16_t values
 		fpga_time_add =
 		    ros::Duration(double(timestamp - time_wrapper_check_line_) / 1000000.0);
@@ -768,6 +766,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 		if(first_imu_received_flag_ == false) {
 		  first_imu_received_flag_ = true;
 		  timestamp_prev_imu_msg_ = fpga_line_time;
+		  imu_dt_ = ros::Duration(0.0);
 		}
 
 		ros::Time imu_timestamp;
