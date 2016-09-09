@@ -606,7 +606,10 @@ inline void uvcROSDriver::deinterleave(const uint8_t *mixed, uint8_t *array1,
 				       size_t imageWidth, size_t imageHeight)
 {
 	int i = 0;
-	int c = 0;
+	int cx = 0;
+	int cy = 0;
+	const int depth_offset_x = 22; //depthmap is too much to the left
+	const int depth_offset_y = 8; //depthmap is too low
 #if defined __ARM_NEON__
 	size_t vectors = mixedLength / 32;
 	size_t divider = (imageWidth + 16) * 2 / 32;
@@ -630,15 +633,19 @@ inline void uvcROSDriver::deinterleave(const uint8_t *mixed, uint8_t *array1,
 
 #endif
 
-	while (c < imageWidth * imageHeight) {
-		array1[c] = mixed[2 * i];
-		array2[c] = mixed[2 * i + 1];
-		i++;
-		c++;
-
-		if ((c % imageWidth) == 0) {
-			i += 16;
+	while (cy < imageHeight) {
+		while (cx < imageWidth) {
+			array1[cy*imageWidth+cx] = mixed[2 * i];
+			// array2[cy*imageWidth+cx] = mixed[2 * i + 1];
+			if (cy > depth_offset_y && cx < imageWidth-depth_offset_x) {
+				array2[(cy-depth_offset_y)*imageWidth+cx+depth_offset_x] = mixed[2 * i + 1];
+			}
+			i++;
+			cx++;
 		}
+		i += 16;
+		cy++;
+		cx = 0;
 	}
 }
 
@@ -804,7 +811,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 
 	// temp container for the 2 images
 	uint8_t left[(frame_size - 16 * 2 * frame->height) / 2];
-	uint8_t right[(frame_size - 16 * 2 * frame->height) / 2];
+	uint8_t right[(frame_size - 16 * 2 * frame->height) / 2] = {0};
 	// read the image data and separate the 2 images
 	deinterleave(static_cast<unsigned char *>(frame->data), left, right,
 		     (size_t)frame_size, frame->width - 16, frame->height);
