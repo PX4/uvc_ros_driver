@@ -769,25 +769,33 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 		  imu_dt_ = ros::Duration(0.0);
 		}
 
-		ros::Time imu_timestamp;
-		if(imu_msg_counter_in_frame > 0)
-		{
-		  imu_timestamp = fpga_line_time;
-		} else {
-		  // for the first imu message in an image take the previous imu msg timestamp and add imu sampling time.
-		  imu_timestamp = timestamp_prev_imu_msg_ + imu_dt_;
-		}
+
 
 		if (!(count == count_prev)) {
-		  ++imu_msg_counter_in_frame;
 
-		  timestamp_prev_imu_msg_ = imu_timestamp;
-		  if(imu_msg_counter_in_frame == 2) {
-		    timestamp_second_imu_msg_in_frame = imu_timestamp;
-		  }
+			ros::Time imu_timestamp;
+			if(imu_msg_counter_in_frame > 0)
+			{
+				imu_timestamp = fpga_line_time;
+			} else {
+				// for the first imu message in an image take the previous imu msg timestamp and add imu sampling time.
+				imu_timestamp = timestamp_prev_imu_msg_ + imu_dt_;
 
-		  if (flip_) {
-		    msg_imu.linear_acceleration.x = acc_y;
+				// TODO(burrimi): FPGA sometimes drops an IMU if it arrives between images. Try to catch and correct timestamp.
+				const ros::Duration time_diff(fpga_line_time - timestamp_prev_imu_msg_);
+				if(time_diff.toSec() > 0.002124) { // Magic constant is overconservative, might not catch all imu drops.
+					//std::cout << "imu lost " << time_diff.toSec() << std::endl;
+					imu_timestamp += imu_dt_;
+				}
+			}
+
+			timestamp_prev_imu_msg_ = imu_timestamp;
+			if(imu_msg_counter_in_frame == 1) {
+				timestamp_second_imu_msg_in_frame = imu_timestamp;
+			}
+
+			if (flip_) {
+				msg_imu.linear_acceleration.x = acc_y;
 				msg_imu.linear_acceleration.y = acc_x;
 				msg_imu.linear_acceleration.z = -acc_z;
 
@@ -806,20 +814,23 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 				msg_imu.angular_velocity.z = -gyr_z;
 			}
 
-			msg_imu.header.stamp = fpga_line_time;
+			msg_imu.header.stamp = imu_timestamp;
 
 			msg_vio.imu.push_back(msg_imu);
 
 			imu_publisher_.publish(msg_imu);
+
+			++imu_msg_counter_in_frame;
 
 			count_prev = count;
 		}
 	}
 
 	if(imu_msg_counter_in_frame > 3) {
-    const ros::Duration diff_timestamps_imu = timestamp_prev_imu_msg_ - timestamp_second_imu_msg_in_frame;
-    imu_dt_.fromSec(diff_timestamps_imu.toSec() / (imu_msg_counter_in_frame - 1));
+		const ros::Duration diff_timestamps_imu = timestamp_prev_imu_msg_ - timestamp_second_imu_msg_in_frame;
+		imu_dt_.fromSec(diff_timestamps_imu.toSec() / (imu_msg_counter_in_frame - 2));
 	}
+	//std::cout << "total: " << imu_dt_ << " n: " << imu_msg_counter_in_frame << std::endl;
 
 	ros::Duration elapsed = fpga_frame_time - past_;
 	past_ = fpga_frame_time;
