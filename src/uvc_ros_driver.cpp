@@ -782,11 +782,12 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 				imu_timestamp = timestamp_prev_imu_msg_ + imu_dt_;
 
 				// TODO(burrimi): FPGA sometimes drops an IMU if it arrives between images. Try to catch and correct timestamp.
-				const ros::Duration time_diff(fpga_line_time - timestamp_prev_imu_msg_);
-				if(time_diff.toSec() > 0.002124) { // Magic constant is overconservative, might not catch all imu drops.
-					//std::cout << "imu lost " << time_diff.toSec() << std::endl;
-					imu_timestamp += imu_dt_;
-				}
+				// This sometimes triggers a false positive, commenting out for now.
+				// const ros::Duration time_diff(fpga_line_time - timestamp_prev_imu_msg_);
+				// if(time_diff.toSec() > 0.002124) { // Magic constant is overconservative, might not catch all imu drops.
+				//	//std::cout << "imu lost " << time_diff.toSec() << std::endl;
+				//	imu_timestamp += imu_dt_;
+				//}
 			}
 
 			timestamp_prev_imu_msg_ = imu_timestamp;
