@@ -611,8 +611,8 @@ inline void uvcROSDriver::deinterleave(const uint8_t *mixed, uint8_t *array1,
 	int depth_offset_x = 0;
 	int depth_offset_y = 0;
 	if (depth_map_) {
-		depth_offset_x = 22; //depthmap is too much to the left
-		depth_offset_y = 8; //depthmap is too low
+		depth_offset_x = 22; // +: depthmap is too much to the left
+		depth_offset_y = 8; // +: depthmap is too low
 	}
 #if defined __ARM_NEON__
 	size_t vectors = mixedLength / 32;
@@ -814,8 +814,10 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 	printf("%lu imu messages\n", msg_vio.imu.size());
 
 	// temp container for the 2 images
-	uint8_t left[(frame_size - 16 * 2 * frame->height) / 2];
-	uint8_t right[(frame_size - 16 * 2 * frame->height) / 2] = {0};
+	const int array_size = (frame_size - 16 * 2 * frame->height) / 2;
+	uint8_t left[array_size];
+	uint8_t right[array_size];
+	memset(right, 0, sizeof(right));
 	// read the image data and separate the 2 images
 	deinterleave(static_cast<unsigned char *>(frame->data), left, right,
 		     (size_t)frame_size, frame->width - 16, frame->height);
