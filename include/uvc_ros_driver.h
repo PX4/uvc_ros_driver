@@ -131,22 +131,42 @@ private:
 	// image publishers
 	ros::Publisher cam_0_pub_;
 	ros::Publisher cam_0_info_pub_;
+	ros::Publisher cam_0c_pub_;
+	ros::Publisher cam_0c_info_pub_;
+	ros::Publisher cam_0d_pub_;
+	ros::Publisher cam_0d_info_pub_;
 	ros::Publisher cam_1_pub_;
 	ros::Publisher cam_1_info_pub_;
 	ros::Publisher cam_2_pub_;
 	ros::Publisher cam_2_info_pub_;
+	ros::Publisher cam_2c_pub_;
+	ros::Publisher cam_2c_info_pub_;
+	ros::Publisher cam_2d_pub_;
+	ros::Publisher cam_2d_info_pub_;
 	ros::Publisher cam_3_pub_;
 	ros::Publisher cam_3_info_pub_;
 	ros::Publisher cam_4_pub_;
 	ros::Publisher cam_4_info_pub_;
+	ros::Publisher cam_4c_pub_;
+	ros::Publisher cam_4c_info_pub_;
+	ros::Publisher cam_4d_pub_;
+	ros::Publisher cam_4d_info_pub_;
 	ros::Publisher cam_5_pub_;
 	ros::Publisher cam_5_info_pub_;
 	ros::Publisher cam_6_pub_;
 	ros::Publisher cam_6_info_pub_;
+	ros::Publisher cam_6c_pub_;
+	ros::Publisher cam_6c_info_pub_;
+	ros::Publisher cam_6d_pub_;
+	ros::Publisher cam_6d_info_pub_;
 	ros::Publisher cam_7_pub_;
 	ros::Publisher cam_7_info_pub_;
 	ros::Publisher cam_8_pub_;
 	ros::Publisher cam_8_info_pub_;
+	ros::Publisher cam_8c_pub_;
+	ros::Publisher cam_8c_info_pub_;
+	ros::Publisher cam_8d_pub_;
+	ros::Publisher cam_8d_info_pub_;
 	ros::Publisher cam_9_pub_;
 	ros::Publisher cam_9_info_pub_;
 	// vio publishers
@@ -240,20 +260,20 @@ public:
 
 		switch (n_cameras) {
 		case 8:
-			camera_config_ = 0x0F;
+			camera_config_ = 0x1EF;
 			break;
 
 		case 6:
-			camera_config_ = 0x07;
+			camera_config_ = 0xE7;
 			break;
 
 		case 4:
-			camera_config_ = 0x03;
+			camera_config_ = 0x63;
 			break;
 
 		case 2:
 		default:
-			camera_config_ = 0x01;
+			camera_config_ = 0x21;
 			break;
 		}
 	};
