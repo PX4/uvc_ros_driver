@@ -592,6 +592,7 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 
 	// std::cout << "Configuring cameras..." << std::endl;
 	setParam("RESETMT9V034", 1.0f);
+	setParam("RESETICM20608",1.0f);
 	// sleep(5);  // needed, fpga reconfigure cameras and restart time
 	// std::cout << "Configuration completed." << std::endl;
 	// last 4 bits activate the 4 camera pairs 0x01 = pair 1 only, 0x0F all 4
