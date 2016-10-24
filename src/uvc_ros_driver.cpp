@@ -261,7 +261,8 @@ void uvcROSDriver::initDevice()
 	// initialize imu msg publisher
 	imu_publisher_ = nh_.advertise<sensor_msgs::Imu>("/vio_imu", 20);
 	// wait on heart beat
-	std::cout << "Waiting on device..." << std::endl;
+	std::cout << "Waiting on device.";
+	fflush(stdout);
 	mavlink_message_t message;
 	int res = sp_.read_message(message);
 
@@ -269,18 +270,21 @@ void uvcROSDriver::initDevice()
 
 	while (heartbeat.type !=9){ //check for system type 9 heartbeat
 
-		if(res!=0){
-			//std::cout << "Wait on heartbeat " << (float)(message.msgid) << std::endl;
+		if(heartbeat.type!=9){
+			printf(".");
+			fflush(stdout);
+			usleep(200000);
 		}
-		if(message.msgid ==0 && res != 0){
-		mavlink_msg_heartbeat_decode(&message, &heartbeat);
-		std::cout << "Got heartbeat from camera" << std::endl;
-		//sleep(1.0);
+		if(message.msgid ==0 ){
+			mavlink_msg_heartbeat_decode(&message, &heartbeat);
+			if(heartbeat.type ==9){
+				std::cout << std::endl << "Got heartbeat from camera" << std::endl;
+			}
 		}
 		res = sp_.read_message(message);
-		}
+	}
 
-	std::cout << "Device connected" << std::endl;
+	//std::cout  << "Device connected" << std::endl;
 	setCalibration(camera_params_);
 	usleep(200000);
 	// set flag for completed initializiation
@@ -305,7 +309,7 @@ void uvcROSDriver::startDevice()
 			//printf("Wait on camera \n");
 		//usleep(200000);
 
-		while(!uvc_cb_flag_ && ros::ok()){
+		/*while(!uvc_cb_flag_ && ros::ok()){
 				/*mavlink_message_t message;
 				int res = sp_.read_message(message);
 				if(res != 0){
@@ -324,21 +328,22 @@ void uvcROSDriver::startDevice()
 
 				}*/
 				//std::cout << "." ;
-			setParam("CAMERA_ENABLE",float(camera_config_));
+			/*setParam("CAMERA_ENABLE",float(camera_config_));
 			usleep(200000);
-		}
+		}*/
 
 			//printf(" done\n");
-
-		/*while (!uvc_cb_flag_ && ros::ok()) {
-			printf("retry start streaming...\n");
-			uvc_stop_streaming(devh_);
-			res = uvc_start_streaming(devh_, &ctrl_, &callback, this, 0);
+		printf("Waiting on stream");
+		while (!uvc_cb_flag_ && ros::ok()) {
+			printf(".");
+			fflush(stdout);
+			//uvc_stop_streaming(devh_);
+			//res = uvc_start_streaming(devh_, &ctrl_, &callback, this, 0);
 
 			setParam("CAMERA_ENABLE",float(camera_config_));
 			usleep(200000);
 			// std::cout << "res: " << res << std::endl;
-		}*/
+		}
 
 	} else {
 		ROS_ERROR("Device not initialized!");
@@ -558,21 +563,35 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 		setParam("STEREO_LR_CAM1", 4.0f);
 		// threshold 0-255 valid disparity
 		setParam("STEREO_TH_CAM1", 120.0f);
+		setParam("STEREO_FP_CAM1", 0.0f);
+		setParam("STEREO_CE_CAM1", 0.0f);
+		setParam("STEREO_OF_CAM1", 0.0f);
+
+		setParam("STEREO_MP_01", 0.0f);
 
 		setParam("STEREO_P1_CAM3", 16.0f);
 		setParam("STEREO_P2_CAM3", 240.0f);
 		setParam("STEREO_LR_CAM3", 4.0f);
 		setParam("STEREO_TH_CAM3", 120.0f);
+		setParam("STEREO_FP_CAM3", 0.0f);
+		setParam("STEREO_CE_CAM3", 0.0f);
+		setParam("STEREO_OF_CAM3", 32.0f);
 
 		setParam("STEREO_P1_CAM5", 16.0f);
 		setParam("STEREO_P2_CAM5", 240.0f);
 		setParam("STEREO_LR_CAM5", 4.0f);
-		setParam("STEREO_TH_CAM5", 40.0f);
+		setParam("STEREO_TH_CAM5", 120.0f);
+		setParam("STEREO_FP_CAM5", 0.0f);
+		setParam("STEREO_CE_CAM5", 0.0f);
+		setParam("STEREO_OF_CAM5", 64.0f);
 
 		setParam("STEREO_P1_CAM7", 16.0f);
-		setParam("STEREO_P2_CAM7", 250.0f);
+		setParam("STEREO_P2_CAM7", 240.0f);
 		setParam("STEREO_LR_CAM7", 4.0f);
-		setParam("STEREO_TH_CAM7", 100.0f);
+		setParam("STEREO_TH_CAM7", 120.0f);
+		setParam("STEREO_FP_CAM7", 0.0f);
+		setParam("STEREO_CE_CAM7", 1.0f);
+		setParam("STEREO_OF_CAM7", 96.0f);
 
 		setParam("CALIB_GAIN", 4300.0f);
 
