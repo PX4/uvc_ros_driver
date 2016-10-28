@@ -177,6 +177,7 @@ private:
 	ros::Publisher stereo_vio_5_pub_;
 	// imu publisher
 	ros::Publisher imu_publisher_;
+	ros::Publisher imu2_publisher_;
 	// camera info
 	sensor_msgs::CameraInfo info_cam_0_;
 	sensor_msgs::CameraInfo info_cam_1_;
@@ -260,7 +261,8 @@ public:
 
 		switch (n_cameras) {
 		case 8:
-			camera_config_ = 0x1EF;
+			//camera_config_ = 0x1EF;
+			camera_config_ = 0x00F;
 			break;
 
 		case 6:

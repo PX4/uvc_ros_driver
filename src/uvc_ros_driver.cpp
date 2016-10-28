@@ -260,6 +260,7 @@ void uvcROSDriver::initDevice()
 
 	// initialize imu msg publisher
 	imu_publisher_ = nh_.advertise<sensor_msgs::Imu>("/vio_imu", 20);
+	//imu2_publisher_ = nh_.advertise<sensor_msgs::Imu>("/vio_imu2", 20);
 	// wait on heart beat
 	std::cout << "Waiting on device.";
 	fflush(stdout);
@@ -567,6 +568,7 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 		setParam("STEREO_CE_CAM1", 0.0f);
 		setParam("STEREO_OF_CAM1", 0.0f);
 
+		//setParam("CAMERA_AUTOEXP",0.0f);
 		setParam("STEREO_MP_01", 0.0f);
 
 		setParam("STEREO_P1_CAM3", 16.0f);
@@ -796,7 +798,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 	uvc_cb_flag_ = true;
 
 	// delay from exposure to readout of 1st line is 9ms
-	static ros::Duration time_offset_frame(0.009);
+	static ros::Duration time_offset_frame(0.041);
 
 	static ros::Time fpga_frame_time = start_offset_ - time_offset_frame;
 	static ros::Time fpga_line_time = start_offset_;
@@ -809,6 +811,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 
 	// read the IMU data
 	uint16_t cam_id = 0;
+	uint16_t imu_id = 0;
 	static uint16_t count_prev = 0;
 
 	// read out micro second timestamp of 1st line
@@ -845,9 +848,16 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 						   frame->data)[int((i + 1) * frame->width - 8 + 0)]);
 
 		// detect cam_id in first row
+
+		//bit 15-12 cam_id, 11-8 imu_id, 7-0 counter 
+
 		if (i == 0) {
-			cam_id = count >> 12;
+			cam_id = (count & 0xF000) >> 12;
 		}
+
+		imu_id = (count & 0x0F00) >> 8;
+
+		count = count & 0x00FF;
 
 		double temperature = double(ShortSwap(static_cast<int16_t *>(
 				frame->data)[int((i + 1) * frame->width - 8 + 1)]));
@@ -959,6 +969,12 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 
 			imu_publisher_.publish(msg_imu);
 
+			/*if (imu_id == 1){
+				imu_publisher_.publish(msg_imu);
+			} else {
+				imu2_publisher_.publish(msg_imu);
+			}*/
+
 			++imu_msg_counter_in_frame;
 
 			count_prev = count;
@@ -980,6 +996,8 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 	       time_offset_frame.toSec());
 	printf("framerate: %f   ", 1.0 / elapsed.toSec());
 	printf("%lu imu messages\n", msg_vio.imu.size());
+	
+	printf("imu id: %d ", imu_id);
 
 	// temp container for the 2 images
 	uint8_t left[(frame_size - 16 * 2 * frame->height) / 2];
