@@ -47,6 +47,8 @@ CameraParameters loadCustomCameraCalibration(const std::string calib_path)
 
 	// load a camera calibration defined in the launch script
 	try {
+		//wait on inital mount of calib path
+		usleep(2000000);
 		YAML::Node YamlNode = YAML::LoadFile(calib_path);
 
 		if (YamlNode.IsNull()) {

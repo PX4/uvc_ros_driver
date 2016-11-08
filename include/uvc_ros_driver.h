@@ -169,15 +169,9 @@ private:
 	ros::Publisher cam_8d_info_pub_;
 	ros::Publisher cam_9_pub_;
 	ros::Publisher cam_9_info_pub_;
-	// vio publishers
-	ros::Publisher stereo_vio_1_pub_;
-	ros::Publisher stereo_vio_2_pub_;
-	ros::Publisher stereo_vio_3_pub_;
-	ros::Publisher stereo_vio_4_pub_;
-	ros::Publisher stereo_vio_5_pub_;
-	// imu publisher
-	ros::Publisher imu_publisher_;
-	ros::Publisher imu2_publisher_;
+	// imu publishers
+	ros::Publisher imu0_publisher_;
+	ros::Publisher imu1_publisher_;
 	// camera info
 	sensor_msgs::CameraInfo info_cam_0_;
 	sensor_msgs::CameraInfo info_cam_1_;
