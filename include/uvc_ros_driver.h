@@ -82,6 +82,7 @@ private:
 	bool depth_map_ = false;
 	bool set_calibration_ = false;
 	bool uvc_cb_flag_ = false;
+	bool first_imu_received_flag_ = false;
 
 	int n_cameras_ = 2;
 	int camera_config_ = 1;
@@ -92,6 +93,9 @@ private:
 	int frameCounter_ = 0;
 	int modulo_ = 1;
 	int calibration_mode_ = 0;
+
+	ros::Duration imu_dt_ = ros::Duration(0.0);
+  ros::Time timestamp_prev_imu_msg_;
 
 	// TODO: add other camera parameters
 	// float ....
@@ -127,32 +131,47 @@ private:
 	// image publishers
 	ros::Publisher cam_0_pub_;
 	ros::Publisher cam_0_info_pub_;
+	ros::Publisher cam_0c_pub_;
+	ros::Publisher cam_0c_info_pub_;
+	ros::Publisher cam_0d_pub_;
+	ros::Publisher cam_0d_info_pub_;
 	ros::Publisher cam_1_pub_;
 	ros::Publisher cam_1_info_pub_;
 	ros::Publisher cam_2_pub_;
 	ros::Publisher cam_2_info_pub_;
+	ros::Publisher cam_2c_pub_;
+	ros::Publisher cam_2c_info_pub_;
+	ros::Publisher cam_2d_pub_;
+	ros::Publisher cam_2d_info_pub_;
 	ros::Publisher cam_3_pub_;
 	ros::Publisher cam_3_info_pub_;
 	ros::Publisher cam_4_pub_;
 	ros::Publisher cam_4_info_pub_;
+	ros::Publisher cam_4c_pub_;
+	ros::Publisher cam_4c_info_pub_;
+	ros::Publisher cam_4d_pub_;
+	ros::Publisher cam_4d_info_pub_;
 	ros::Publisher cam_5_pub_;
 	ros::Publisher cam_5_info_pub_;
 	ros::Publisher cam_6_pub_;
 	ros::Publisher cam_6_info_pub_;
+	ros::Publisher cam_6c_pub_;
+	ros::Publisher cam_6c_info_pub_;
+	ros::Publisher cam_6d_pub_;
+	ros::Publisher cam_6d_info_pub_;
 	ros::Publisher cam_7_pub_;
 	ros::Publisher cam_7_info_pub_;
 	ros::Publisher cam_8_pub_;
 	ros::Publisher cam_8_info_pub_;
+	ros::Publisher cam_8c_pub_;
+	ros::Publisher cam_8c_info_pub_;
+	ros::Publisher cam_8d_pub_;
+	ros::Publisher cam_8d_info_pub_;
 	ros::Publisher cam_9_pub_;
 	ros::Publisher cam_9_info_pub_;
-	// vio publishers
-	ros::Publisher stereo_vio_1_pub_;
-	ros::Publisher stereo_vio_2_pub_;
-	ros::Publisher stereo_vio_3_pub_;
-	ros::Publisher stereo_vio_4_pub_;
-	ros::Publisher stereo_vio_5_pub_;
-	// imu publisher
-	ros::Publisher imu_publisher_;
+	// imu publishers
+	ros::Publisher imu0_publisher_;
+	ros::Publisher imu1_publisher_;
 	// camera info
 	sensor_msgs::CameraInfo info_cam_0_;
 	sensor_msgs::CameraInfo info_cam_1_;
@@ -236,20 +255,21 @@ public:
 
 		switch (n_cameras) {
 		case 8:
-			camera_config_ = 0x0F;
+			//camera_config_ = 0x1EF;
+			camera_config_ = 0x00F;
 			break;
 
 		case 6:
-			camera_config_ = 0x07;
+			camera_config_ = 0xE7;
 			break;
 
 		case 4:
-			camera_config_ = 0x03;
+			camera_config_ = 0x63;
 			break;
 
 		case 2:
 		default:
-			camera_config_ = 0x01;
+			camera_config_ = 0x21;
 			break;
 		}
 	};

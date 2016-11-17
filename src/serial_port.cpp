@@ -400,7 +400,7 @@ _setup_port(int baud, int data_bits, int stop_bits, bool parity, bool hardware_c
 	// One input byte is enough to return from read()
 	// Inter-character timer off
 	config.c_cc[VMIN]  = 1;
-	config.c_cc[VTIME] = 10; // was 0
+	config.c_cc[VTIME] = 1; // was 0
 
 	// Get the current options for the port
 	////struct termios options;
