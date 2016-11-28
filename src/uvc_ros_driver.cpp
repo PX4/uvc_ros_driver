@@ -776,14 +776,13 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 
     // Static vars are initialized only in the first run. Calculate time offset between current time (ros::Time::now())
     // of host and substract current timestamp of device, as this timestamp depends on the powered on time of the device
-    static ros::Duration time_offset_frame(0.041);
-    static ros::Time fpga_frame_time = ros::Time::now() - time_offset_frame - ros::Duration(double(timestamp/k_ms_to_sec)); //subtract first timestamp
-    static ros::Time fpga_line_time = ros::Time::now() - ros::Duration(double(timestamp/k_ms_to_sec));
-    ros::Duration fpga_time_add(0.0);
+	static ros::Duration time_offset_frame(0.041);
+	static ros::Time fpga_frame_time = ros::Time::now() - time_offset_frame - ros::Duration(double(timestamp/k_ms_to_sec)); //subtract first timestamp
+	static ros::Time fpga_line_time = ros::Time::now() - ros::Duration(double(timestamp/k_ms_to_sec));
+	ros::Duration fpga_time_add(0.0);
 
 	// wrap around is automatically handled by underflow of uint16_t values
-	fpga_time_add = ros::Duration(
-				(double(timestamp - time_wrapper_check_frame_)) /k_ms_to_sec);
+	fpga_time_add = ros::Duration((double(timestamp - time_wrapper_check_frame_)) /k_ms_to_sec);
 	time_wrapper_check_frame_ = timestamp;
 
 	// frame time is timestamp of 1st line + offset_start - offset_frame from
@@ -940,12 +939,12 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 	past_ = fpga_frame_time;
 
 	ROS_DEBUG("camera id: %d   ", cam_id);
-    ROS_DEBUG("Current time: %f", ros::Time::now().toSec());
+	ROS_DEBUG("Current time: %f", ros::Time::now().toSec());
 	ROS_DEBUG("Message Timestamp: %f   ", fpga_frame_time.toSec());
-    ROS_DEBUG("Device Timestamp: %f   ", double(timestamp/k_ms_to_sec));
+	ROS_DEBUG("Device Timestamp: %f   ", double(timestamp/k_ms_to_sec));
 	ROS_DEBUG("framerate: %f   ", 1.0 / elapsed.toSec());
 	ROS_DEBUG("%lu imu messages\n", msg_vio.imu.size());
-	
+
 	ROS_DEBUG("imu id: %d ", imu_id);
 
 	// temp container for the 2 images
