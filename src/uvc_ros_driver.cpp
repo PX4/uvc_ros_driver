@@ -542,7 +542,7 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 		setParam("STEREO_TH_CAM5", 120.0f);
 		setParam("STEREO_FP_CAM5", 0.0f);
 		setParam("STEREO_CE_CAM5", 0.0f);
-		setParam("STEREO_OF_CAM5", 64.0f);
+		setParam("STEREO_OF_CAM5", 0.0f);
 
 		setParam("STEREO_P1_CAM7", 16.0f);
 		setParam("STEREO_P2_CAM7", 240.0f);
@@ -979,7 +979,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 			       frame->width - 16,  // stepSize
 			       left);
 
-	msg_vio.left_image.header.stamp = fpga_frame_time;
+	//msg_vio.left_image.header.stamp = fpga_frame_time;
 
 	sensor_msgs::fillImage(msg_vio.right_image,
 			       sensor_msgs::image_encodings::MONO8,
@@ -988,7 +988,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 			       frame->width - 16,  // stepSize
 			       right);
 
-	msg_vio.right_image.header.stamp = fpga_frame_time;
+	//msg_vio.right_image.header.stamp = fpga_frame_time;
 
 
 	// publish data
@@ -998,6 +998,9 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 			frame_time_ = fpga_frame_time;
 			frameCounter_++;
 		}
+		msg_vio.header.stamp = frame_time_;
+		msg_vio.left_image.header.stamp = frame_time_;
+		msg_vio.right_image.header.stamp = frame_time_;
 		// set frame_id on images and on msg_vio
 		msg_vio.header.stamp = frame_time_;
 		msg_vio.left_image.header.frame_id = "cam_0_optical_frame";
@@ -1220,7 +1223,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 		// FPGA can only send 2 images at time, but all of them are took at the same
 		// time, so the image time stamp should be set to the first camera pair
 		// set timestamp if cam 8 + 9 raw is disabled
-		if(n_cameras_ >=9 && (camera_config_ & 0x010) ==0){
+		if(n_cameras_ >=9 ){//&& (camera_config_ & 0x010) ==0){
 			frame_time_ = fpga_frame_time;
 			frameCounter_++;
 		}
