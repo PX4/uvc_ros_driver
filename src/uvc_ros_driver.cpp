@@ -117,6 +117,14 @@ void uvcROSDriver::initDevice()
 				     node_name_ + "/cam_9/image_raw", 5);
 		cam_9_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
 					  node_name_ + "/cam_9/camera_info", 5);
+		cam_8c_pub_ = nh_.advertise<sensor_msgs::Image>(
+				     node_name_ + "/cam_8/image_rect", 5);
+		cam_8c_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
+					  node_name_ + "/cam_8/camera_info", 5);
+		cam_8d_pub_ = nh_.advertise<sensor_msgs::Image>(
+				     node_name_ + "/cam_8/image_depth", 5);
+		cam_8d_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
+					  node_name_ + "/cam_8/camera_info", 5);
 
 	case 9:
 		cam_8_pub_ = nh_.advertise<sensor_msgs::Image>(
@@ -526,7 +534,7 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 		setParam("STEREO_TH_CAM3", 120.0f);
 		setParam("STEREO_FP_CAM3", 0.0f);
 		setParam("STEREO_CE_CAM3", 0.0f);
-		setParam("STEREO_OF_CAM3", 32.0f);
+		setParam("STEREO_OF_CAM3", 0.0f);
 
 		setParam("STEREO_P1_CAM5", 16.0f);
 		setParam("STEREO_P2_CAM5", 240.0f);
@@ -541,8 +549,16 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 		setParam("STEREO_LR_CAM7", 4.0f);
 		setParam("STEREO_TH_CAM7", 120.0f);
 		setParam("STEREO_FP_CAM7", 0.0f);
-		setParam("STEREO_CE_CAM7", 1.0f);
-		setParam("STEREO_OF_CAM7", 96.0f);
+		setParam("STEREO_CE_CAM7", 0.0f);
+		setParam("STEREO_OF_CAM7", 0.0f);
+
+		setParam("STEREO_P1_CAM9", 16.0f);
+		setParam("STEREO_P2_CAM9", 240.0f);
+		setParam("STEREO_LR_CAM9", 4.0f);
+		setParam("STEREO_TH_CAM9", 120.0f);
+		setParam("STEREO_FP_CAM9", 0.0f);
+		setParam("STEREO_CE_CAM9", 0.0f);
+		setParam("STEREO_OF_CAM9", 0.0f);
 
 		setParam("CALIB_GAIN", 4300.0f);
 
@@ -977,8 +993,11 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 
 	// publish data
 	if (cam_id == 0) {  // select_cam = 0 + 1
-		frame_time_ = fpga_frame_time;
-		frameCounter_++;
+		// set timestamp of all frames when cameras 8+9 are disabled
+		if(n_cameras_ < 9){
+			frame_time_ = fpga_frame_time;
+			frameCounter_++;
+		}
 		// set frame_id on images and on msg_vio
 		msg_vio.header.stamp = frame_time_;
 		msg_vio.left_image.header.frame_id = "cam_0_optical_frame";
@@ -1003,6 +1022,12 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 	if (cam_id == 8 && frameCounter_ % modulo_ == 0) {  // select_cam = 2 + 3
 		// FPGA can only send 2 images at time, but all of them are took at the same
 		// time, so the image time stamp should be set to the first camera pair
+		//check if camera0/camera1 raw output is disabled and set timestamp 
+		//when cameras 8+9 are disabled
+		if(n_cameras_ < 9 && (camera_config_ & 0x001) ==0){
+			frame_time_ = fpga_frame_time;
+			frameCounter_++;
+		}
 		msg_vio.header.stamp = frame_time_;
 		msg_vio.left_image.header.stamp = frame_time_;
 		msg_vio.right_image.header.stamp = frame_time_;
@@ -1165,6 +1190,11 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 	}
 
 	if (cam_id == 4 && frameCounter_ % modulo_ == 0) {  // select_cam = 8 + 9
+		// set timestamp for all frames if cam 8 + 9 enabled here
+		if(n_cameras_ >=9){
+			frame_time_ = fpga_frame_time;
+			frameCounter_++;
+		}
 		msg_vio.header.stamp = frame_time_;
 		msg_vio.left_image.header.stamp = frame_time_;
 		msg_vio.right_image.header.stamp = frame_time_;
@@ -1184,6 +1214,35 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 		// publish camera info
 		cam_8_info_pub_.publish(info_cam_8_);
 		cam_9_info_pub_.publish(info_cam_9_);
+	}
+
+	if (cam_id == 12 && frameCounter_ % modulo_ == 0) {  // select_cam = 2 + 3
+		// FPGA can only send 2 images at time, but all of them are took at the same
+		// time, so the image time stamp should be set to the first camera pair
+		// set timestamp if cam 8 + 9 raw is disabled
+		if(n_cameras_ >=9 && (camera_config_ & 0x010) ==0){
+			frame_time_ = fpga_frame_time;
+			frameCounter_++;
+		}
+		msg_vio.header.stamp = frame_time_;
+		msg_vio.left_image.header.stamp = frame_time_;
+		msg_vio.right_image.header.stamp = frame_time_;
+		// set frame_id on images
+		msg_vio.left_image.header.frame_id = "cam_8_corrected_frame";
+		msg_vio.right_image.header.frame_id = "cam_8_disparity_frame";
+
+		// publish images
+		cam_8c_pub_.publish(msg_vio.left_image);
+		cam_8d_pub_.publish(msg_vio.right_image);
+
+		// set camera info header
+		setCameraInfoHeader(info_cam_2_, width_, height_, frame_time_,
+				    "cam_2_optical_frame");
+		setCameraInfoHeader(info_cam_3_, width_, height_, frame_time_,
+				    "cam_3_optical_frame");
+		// publish camera info
+		cam_8c_info_pub_.publish(info_cam_2_);
+		cam_8d_info_pub_.publish(info_cam_3_);
 	}
 
 
