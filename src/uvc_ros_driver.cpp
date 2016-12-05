@@ -206,8 +206,8 @@ void uvcROSDriver::initDevice()
 	}
 
 	// initialize imu msg publisher
-	imu0_publisher_ = nh_.advertise<sensor_msgs::Imu>("/cam_0_imu", 20);
-	imu1_publisher_ = nh_.advertise<sensor_msgs::Imu>("/cam_1_imu", 20);
+	imu0_publisher_ = nh_.advertise<sensor_msgs::Imu>("cam_0/imu", 20);
+	imu1_publisher_ = nh_.advertise<sensor_msgs::Imu>("cam_1/imu", 20);
 	// wait on heart beat
 	std::cout << "Waiting on device.";
 	fflush(stdout);
@@ -248,7 +248,6 @@ void uvcROSDriver::startDevice()
 		uvc_error_t res = initAndOpenUvc();
 		// start stream
 		past_ = ros::Time::now();
-		start_offset_ = ros::Time::now();
 		res = uvc_start_streaming(devh_, &ctrl_, &callback, this, 0);
 			//mavlink_param_value_t param;
 			//bool wait=1;
@@ -749,13 +748,6 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 	// flag
 	uvc_cb_flag_ = true;
 
-	// delay from exposure to readout of 1st line is 9ms
-	static ros::Duration time_offset_frame(0.041);
-
-	static ros::Time fpga_frame_time = start_offset_ - time_offset_frame;
-	static ros::Time fpga_line_time = start_offset_;
-	ros::Duration fpga_time_add(0.0);
-
 	ait_ros_messages::VioSensorMsg msg_vio;
 	sensor_msgs::Imu msg_imu;
 
@@ -782,9 +774,15 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 	uint32_t timestamp =
 		(((uint32_t)(timestamp_upper)) << 16) + (uint32_t)(timestamp_lower);
 
+    // Static vars are initialized only in the first run. Calculate time offset between current time (ros::Time::now())
+    // of host and substract current timestamp of device, as this timestamp depends on the powered on time of the device
+	static ros::Duration time_offset_frame(0.041);
+	static ros::Time fpga_frame_time = ros::Time::now() - time_offset_frame - ros::Duration(double(timestamp/k_ms_to_sec)); //subtract first timestamp
+	static ros::Time fpga_line_time = ros::Time::now() - ros::Duration(double(timestamp/k_ms_to_sec));
+	ros::Duration fpga_time_add(0.0);
+
 	// wrap around is automatically handled by underflow of uint16_t values
-	fpga_time_add = ros::Duration(
-				(double(timestamp - time_wrapper_check_frame_)) / 1000000.0);
+	fpga_time_add = ros::Duration((double(timestamp - time_wrapper_check_frame_)) /k_ms_to_sec);
 	time_wrapper_check_frame_ = timestamp;
 
 	// frame time is timestamp of 1st line + offset_start - offset_frame from
@@ -857,7 +855,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 
 		// wrap around is automatically handled by underflow of uint16_t values
 		fpga_time_add =
-		    ros::Duration(double(timestamp - time_wrapper_check_line_) / 1000000.0);
+		    ros::Duration(double(timestamp - time_wrapper_check_line_) / k_ms_to_sec);
 		time_wrapper_check_line_ = timestamp;
 
 		// line time is timestamp of current line + offset_start
@@ -941,12 +939,12 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 	past_ = fpga_frame_time;
 
 	ROS_DEBUG("camera id: %d   ", cam_id);
-	ROS_DEBUG("timestamp fpga: %f   ", fpga_frame_time.toSec() -
-	       start_offset_.toSec() +
-	       time_offset_frame.toSec());
+	ROS_DEBUG("Current time: %f", ros::Time::now().toSec());
+	ROS_DEBUG("Message Timestamp: %f   ", fpga_frame_time.toSec());
+	ROS_DEBUG("Device Timestamp: %f   ", double(timestamp/k_ms_to_sec));
 	ROS_DEBUG("framerate: %f   ", 1.0 / elapsed.toSec());
 	ROS_DEBUG("%lu imu messages\n", msg_vio.imu.size());
-	
+
 	ROS_DEBUG("imu id: %d ", imu_id);
 
 	// temp container for the 2 images
