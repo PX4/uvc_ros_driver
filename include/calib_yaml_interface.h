@@ -10,13 +10,13 @@
 // =========================================================
 struct CameraParameters { // parameters of one camera
 	bool isValid;
-	double FocalLength[8][2];
-	double PrincipalPoint[8][2];
-	double DistortionCoeffs[8][4];
-	int CameraModel[8];
-	int DistortionModel[8];
+	double FocalLength[10][2];
+	double PrincipalPoint[10][2];
+	double DistortionCoeffs[10][4];
+	int CameraModel[10];
+	int DistortionModel[10];
 
-	double StereoTransformationMatrix[4][4][4];
+	double StereoTransformationMatrix[5][4][4];
 
 	enum {PINHOLE = 0, OMNI = 1};
 	enum {RADTAN = 0, EQUI = 1};
