@@ -455,12 +455,14 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 			std::vector<std::pair<int, int> >::iterator it_homography =
 				std::max_element(homography_mapping_.begin(), homography_mapping_.end(),
 						 myPairMax);
-			if ((*it_homography).second > n_cameras_) {
+			/*if ((*it_homography).second > n_cameras_) {
 				homography_size = std::distance(homography_mapping_.begin(), it_homography);
 
 			} else {
 				homography_size = homography_mapping_.size();
-			}
+			}*/
+			//set homography number to number of camera pairs for now
+			homography_size = n_cameras_/2;
 
 			for (size_t i = 0; i < homography_size; i++) {
 				// temp structures
