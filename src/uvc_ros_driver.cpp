@@ -973,7 +973,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 		     (size_t)frame_size, frame->width - 16, frame->height);
 
 	sensor_msgs::fillImage(msg_vio.left_image,
-			       sensor_msgs::image_encodings::MONO8,
+			       sensor_msgs::image_encodings::MONO8,//BAYER_GBRG8,//
 			       frame->height,      // height
 			       frame->width - 16,  // width
 			       frame->width - 16,  // stepSize
@@ -982,7 +982,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 	//msg_vio.left_image.header.stamp = fpga_frame_time;
 
 	sensor_msgs::fillImage(msg_vio.right_image,
-			       sensor_msgs::image_encodings::MONO8,
+			       sensor_msgs::image_encodings::MONO8,//BAYER_BGGR8,//
 			       frame->height,      // height
 			       frame->width - 16,  // width
 			       frame->width - 16,  // stepSize
