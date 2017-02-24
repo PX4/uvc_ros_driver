@@ -52,14 +52,14 @@ CameraParameters loadCustomCameraCalibration(const std::string calib_path)
 		YAML::Node YamlNode = YAML::LoadFile(calib_path);
 
 		if (YamlNode.IsNull()) {
-			ROS_WARN("Continuing without calibration file");
+			ROS_INFO("Continuing without calibration file");
 			cp.isValid = false;
 		}
 
 		cp = parseYaml(YamlNode);
 
 	} catch (YAML::BadFile &e) {
-		ROS_WARN("Continuing without calibration file");
+		ROS_INFO("Continuing without calibration file");
 		cp.isValid = false;
 	}
 
