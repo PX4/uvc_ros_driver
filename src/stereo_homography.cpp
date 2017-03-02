@@ -106,6 +106,7 @@ StereoHomography::StereoHomography(
 		d1_[1] = cam1_projection_model->k2_;
 		d1_[2] = cam1_projection_model->r1_;
 		d1_[3] = cam1_projection_model->r2_;
+		distortion_model_ = (cam0_projection_model->distortion_model_ || cam1_projection_model->distortion_model_);
 
 		for (int i = 0; i < 3; ++i) {
 			t0_[i] = cam0_projection_model->t_[i];
@@ -200,87 +201,107 @@ void StereoHomography::getHomography(Eigen::Matrix3d &H0, Eigen::Matrix3d &H1,
 	Eigen::Matrix3d R_new;
 	R_new.setIdentity();
 
-	// Computation of the *new* intrinsic parameters for both left and right
-	// cameras
-	// Vertical focal length *MUST* be the same for both images (here, we are
-	// trying to find a focal length
-	// that retains as much information contained in the original distorted
-	// images):
-	double f0_y_new;
-
-	if (d0_[0] < 0)
-		f0_y_new =
-			f0_[1] * (1 + d0_[0] * (pow(image_width_, 2) + pow(image_height_, 2)) /
-				  (4 * pow(f0_[1], 2)));
-	else {
-		f0_y_new = f0_[1];
+	double f_y_new = 0;
+	// Select distortion models
+	if(distortion_model_){
+		f_y_new  = (f0_[0]+f0_[1]+f1_[0]+f1_[1])/4-90;//+zoom;
 	}
+	else{
+		// Computation of the *new* intrinsic parameters for both left and right
+		// cameras
+		// Vertical focal length *MUST* be the same for both images (here, we are
+		// trying to find a focal length
+		// that retains as much information contained in the original distorted
+		// images):
+		double f0_y_new;
 
-	double f1_y_new;
+		if (d0_[0] < 0)
+			f0_y_new =
+				f0_[1] * (1 + d0_[0] * (pow(image_width_, 2) + pow(image_height_, 2)) /
+					  (4 * pow(f0_[1], 2)));
+		else {
+			f0_y_new = f0_[1];
+		}
 
-	if (d1_[0] < 0)
-		f1_y_new =
-			f1_[1] * (1 + d1_[0] * (pow(image_width_, 2) + pow(image_height_, 2)) /
-				  (4 * pow(f1_[1], 2)));
-	else {
-		f1_y_new = f1_[1];
+		double f1_y_new;
+
+		if (d1_[0] < 0)
+			f1_y_new =
+				f1_[1] * (1 + d1_[0] * (pow(image_width_, 2) + pow(image_height_, 2)) /
+					  (4 * pow(f1_[1], 2)));
+		else {
+			f1_y_new = f1_[1];
+		}
+
+		f_y_new = std::min(f0_y_new, f1_y_new) +
+				 zoom;  // HACK(gohlp): 40 to zoom in, should be automatically
 	}
-
-	double f_y_new = std::min(f0_y_new, f1_y_new) +
-			 zoom;  // HACK(gohlp): 40 to zoom in, should be automatically
-
 	// For simplicity, let's pick the same value for the horizontal focal length
 	// as the vertical focal length
 	// (resulting into square pixels)
 	double f0_new = std::round(f_y_new);
 	double f1_new = std::round(f_y_new);
 
-	p0_new = Eigen::Vector2d::Zero();
+	double px_new = 0;
+	double py_new = 0;
 
-	// Select the new principal points to maximize the visible area in the
-	// rectified images
-	// To this end, project all corner pixels into rectified image to determine
-	// new corners
-	Eigen::Vector2d corner_coord = Eigen::Vector2d::Zero();
+	if(distortion_model_){
+		px_new = (p0_[0] + p1_[0]) / 2.0;
+		p0_new(0) = px_new;
+		p1_new(0) = px_new;
+		py_new = (p0_[1] + p1_[1]) / 2.0;
+		p0_new(1) = py_new;
+		p1_new(1) = py_new;
+	}
+	else{
+		p0_new = Eigen::Vector2d::Zero();
 
-	p0_new +=
-		projectPoint2(normalizePixel(corner_coord, f0_, p0_, d0_), R_0, f0_new);
-	corner_coord << (image_width_ - 1), 0;
-	p0_new +=
-		projectPoint2(normalizePixel(corner_coord, f0_, p0_, d0_), R_0, f0_new);
-	corner_coord << (image_width_ - 1), (image_height_ - 1);
-	p0_new +=
-		projectPoint2(normalizePixel(corner_coord, f0_, p0_, d0_), R_0, f0_new);
-	corner_coord << 0, (image_height_ - 1);
-	p0_new +=
-		projectPoint2(normalizePixel(corner_coord, f0_, p0_, d0_), R_0, f0_new);
-	Eigen::Vector2d center;
-	center << (image_width_ - 1) / 2.0, (image_height_ - 1) / 2.0;
-	p0_new = center - p0_new / 4.0;
+		// Select the new principal points to maximize the visible area in the
+		// rectified images
+		// To this end, project all corner pixels into rectified image to determine
+		// new corners
+		Eigen::Vector2d corner_coord = Eigen::Vector2d::Zero();
 
-	p1_new = Eigen::Vector2d::Zero();
-	corner_coord << 0, 0;
-	p1_new +=
-		projectPoint2(normalizePixel(corner_coord, f1_, p1_, d1_), R_1, f1_new);
-	corner_coord << (image_width_ - 1), 0;
-	p1_new +=
-		projectPoint2(normalizePixel(corner_coord, f1_, p1_, d1_), R_1, f1_new);
-	corner_coord << (image_width_ - 1), (image_height_ - 1);
-	p1_new +=
-		projectPoint2(normalizePixel(corner_coord, f1_, p1_, d1_), R_1, f1_new);
-	corner_coord << 0, (image_height_ - 1);
-	p1_new +=
-		projectPoint2(normalizePixel(corner_coord, f1_, p1_, d1_), R_1, f1_new);
-	p1_new = center - p1_new / 4.0;
+		p0_new +=
+			projectPoint2(normalizePixel(corner_coord, f0_, p0_, d0_), R_0, f0_new);
+		corner_coord << (image_width_ - 1), 0;
+		p0_new +=
+			projectPoint2(normalizePixel(corner_coord, f0_, p0_, d0_), R_0, f0_new);
+		corner_coord << (image_width_ - 1), (image_height_ - 1);
+		p0_new +=
+			projectPoint2(normalizePixel(corner_coord, f0_, p0_, d0_), R_0, f0_new);
+		corner_coord << 0, (image_height_ - 1);
+		p0_new +=
+			projectPoint2(normalizePixel(corner_coord, f0_, p0_, d0_), R_0, f0_new);
+		Eigen::Vector2d center;
+		center << (image_width_ - 1) / 2.0, (image_height_ - 1) / 2.0;
+		p0_new = center - p0_new / 4.0;
 
-	// For simplicity, set the principal points for both cameras to be the average
-	// of the two principal points
-	double py_new = (p0_new(1) + p1_new(1)) / 2.0;
-	p0_new(1) = py_new;
-	p1_new(1) = py_new;
-	double px_new = (p0_new(0) + p1_new(0)) / 2.0;
-	p0_new(0) = px_new;
-	p1_new(0) = px_new;
+		p1_new = Eigen::Vector2d::Zero();
+		corner_coord << 0, 0;
+		p1_new +=
+			projectPoint2(normalizePixel(corner_coord, f1_, p1_, d1_), R_1, f1_new);
+		corner_coord << (image_width_ - 1), 0;
+		p1_new +=
+			projectPoint2(normalizePixel(corner_coord, f1_, p1_, d1_), R_1, f1_new);
+		corner_coord << (image_width_ - 1), (image_height_ - 1);
+		p1_new +=
+			projectPoint2(normalizePixel(corner_coord, f1_, p1_, d1_), R_1, f1_new);
+		corner_coord << 0, (image_height_ - 1);
+		p1_new +=
+			projectPoint2(normalizePixel(corner_coord, f1_, p1_, d1_), R_1, f1_new);
+		p1_new = center - p1_new / 4.0;
+
+		// For simplicity, set the principal points for both cameras to be the average
+		// of the two principal points
+		py_new = (p0_new(1) + p1_new(1)) / 2.0;
+		p0_new(1) = py_new;
+		p1_new(1) = py_new;
+		px_new = (p0_new(0) + p1_new(0)) / 2.0;
+		p0_new(0) = px_new;
+		p1_new(0) = px_new;
+	}
+
 
 	// Original Camera matrices
 	Eigen::Matrix3d C0 = Eigen::Matrix3d::Zero();
@@ -299,6 +320,8 @@ void StereoHomography::getHomography(Eigen::Matrix3d &H0, Eigen::Matrix3d &H1,
 	// Compute homography
 	H0 = C0 * R_0.transpose() * C0_new.inverse();
 	H1 = C1 * R_1.transpose() * C1_new.inverse();
+
+	ROS_INFO("H0 is \n %f %f %f \n %f %f %f \n %f %f %f", H1(0),H1(3),H1(6),H1(1),H1(4),H1(7),H1(2),H1(5),H1(8));
 
 	f_new = f0_new;
 }

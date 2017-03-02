@@ -17,6 +17,7 @@ public:
 
 	ProjectionModelTypes type_;
 
+	bool distortion_model_;
 	float focal_length_u_;
 	float focal_length_v_;
 	float principal_point_u_;

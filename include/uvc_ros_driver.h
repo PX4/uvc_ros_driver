@@ -191,7 +191,7 @@ private:
 	void sendCameraParam(const int camera_number, const double fx,
 			     const double fy, const Eigen::Vector2d &p0,
 			     const float k1, const float k2, const float r1,
-			     const float r2, const Eigen::Matrix3d &H);
+			     const float r2, const Eigen::Matrix3d &H, const bool distortion_model);
 	void setCalibration(CameraParameters camParams);
 	inline void deinterleave(const uint8_t *mixed, uint8_t *array1,
 				 uint8_t *array2, size_t mixedLength,

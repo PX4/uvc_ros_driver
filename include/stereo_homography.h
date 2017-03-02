@@ -3,6 +3,7 @@
 
 #include <Eigen/Dense>
 #include "fpga_calibration.h"
+#include <ros/ros.h>
 
 
 class StereoHomography
@@ -28,6 +29,7 @@ private:
 	double f1_[2];
 	double p1_[2];
 	double d1_[5];
+	bool distortion_model_;
 	int image_width_;
 	int image_height_;
 };

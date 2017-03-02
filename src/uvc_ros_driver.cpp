@@ -193,6 +193,7 @@ void uvcROSDriver::initDevice()
 					  node_name_ + "/cam_2/camera_info", 5);
 
 	case 2:
+
 		cam_1_pub_ = nh_.advertise<sensor_msgs::Image>(
 				     node_name_ + "/cam_1/image_raw", 5);
 		cam_1_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
@@ -349,9 +350,14 @@ void uvcROSDriver::sendCameraParam(const int camera_number, const double fx,
 				   const double fy, const Eigen::Vector2d &p0,
 				   const float k1, const float k2,
 				   const float r1, const float r2,
-				   const Eigen::Matrix3d &H)
+				   const Eigen::Matrix3d &H, const bool distortion_model)
 {
 	std::string camera_name = "CAM" + std::to_string(camera_number);
+
+	//float dm = (float)distortion_model;
+	ROS_INFO("PARAM_DISTORTION_MODEL_CAM%i = %d",camera_number,distortion_model);
+
+	setParam("PARAM_DM_"  + camera_name, distortion_model);
 	setParam("PARAM_CCX_" + camera_name, p0[0]);
 	setParam("PARAM_CCY_" + camera_name, p0[1]);
 	setParam("PARAM_FCX_" + camera_name, fx);
@@ -386,6 +392,7 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 			uvc_ros_driver::FPGACalibration camera;
 			camera.projection_model_.type_ =
 				uvc_ros_driver::ProjectionModelTypes::PINHOLE;
+			camera.projection_model_.distortion_model_ = camParams.DistortionModel[cam];
 			camera.projection_model_.focal_length_u_ = camParams.FocalLength[cam][0];
 			camera.projection_model_.focal_length_v_ = camParams.FocalLength[cam][1];
 			camera.projection_model_.principal_point_u_ =
@@ -490,7 +497,7 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 				sendCameraParam(i, f_[i], f_[i], p_[i], cams[i].projection_model_.k1_,
 						cams[i].projection_model_.k2_,
 						cams[i].projection_model_.r1_,
-						cams[i].projection_model_.r2_, H_[i]);
+						cams[i].projection_model_.r2_, H_[i], cams[i].projection_model_.distortion_model_);
 				selectCameraInfo(i, &ci);
 				setCameraInfoIntrinsics(*ci, f_[i], f_[i], p_[i](0), p_[i](1));
 				setCameraInfoDistortionMdl(
