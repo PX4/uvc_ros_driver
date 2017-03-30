@@ -574,6 +574,52 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 		setParam("CALIB_GAIN", 4300.0f);
 
 		setParam("CAMERA_H_FLIP", float(flip_));
+
+		if(flip_){
+			setParam("IM_H_FLIP_CAM0", 0.0f);
+			setParam("IM_V_FLIP_CAM0", 0.0f);
+			setParam("IM_H_FLIP_CAM2", 0.0f);
+			setParam("IM_V_FLIP_CAM2", 0.0f);
+			setParam("IM_H_FLIP_CAM4", 0.0f);
+			setParam("IM_V_FLIP_CAM4", 0.0f);
+			setParam("IM_H_FLIP_CAM6", 0.0f);
+			setParam("IM_V_FLIP_CAM6", 0.0f);
+			setParam("IM_H_FLIP_CAM8", 0.0f);
+			setParam("IM_V_FLIP_CAM8", 0.0f);
+			setParam("IM_H_FLIP_CAM1", 1.0f);
+			setParam("IM_V_FLIP_CAM1", 1.0f);
+			setParam("IM_H_FLIP_CAM3", 1.0f);
+			setParam("IM_V_FLIP_CAM3", 1.0f);
+			setParam("IM_H_FLIP_CAM5", 1.0f);
+			setParam("IM_V_FLIP_CAM5", 1.0f);
+			setParam("IM_H_FLIP_CAM7", 1.0f);
+			setParam("IM_V_FLIP_CAM7", 1.0f);
+			setParam("IM_H_FLIP_CAM9", 1.0f);
+			setParam("IM_V_FLIP_CAM9", 1.0f);
+		}
+		else{
+			setParam("IM_H_FLIP_CAM0", 1.0f);
+			setParam("IM_V_FLIP_CAM0", 1.0f);
+			setParam("IM_H_FLIP_CAM2", 1.0f);
+			setParam("IM_V_FLIP_CAM2", 1.0f);
+			setParam("IM_H_FLIP_CAM4", 1.0f);
+			setParam("IM_V_FLIP_CAM4", 1.0f);
+			setParam("IM_H_FLIP_CAM6", 1.0f);
+			setParam("IM_V_FLIP_CAM6", 1.0f);
+			setParam("IM_H_FLIP_CAM8", 1.0f);
+			setParam("IM_V_FLIP_CAM8", 1.0f);
+			setParam("IM_H_FLIP_CAM1", 0.0f);
+			setParam("IM_V_FLIP_CAM1", 0.0f);
+			setParam("IM_H_FLIP_CAM3", 0.0f);
+			setParam("IM_V_FLIP_CAM3", 0.0f);
+			setParam("IM_H_FLIP_CAM5", 0.0f);
+			setParam("IM_V_FLIP_CAM5", 0.0f);
+			setParam("IM_H_FLIP_CAM7", 0.0f);
+			setParam("IM_V_FLIP_CAM7", 0.0f);
+			setParam("IM_H_FLIP_CAM9", 0.0f);
+			setParam("IM_V_FLIP_CAM9", 0.0f);
+		}
+
 	}
 
 	/*if (set_calibration_) {
