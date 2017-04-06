@@ -59,8 +59,9 @@ static bool myPairMax(std::pair<int, int> p, std::pair<int, int> p1)
 
 uvcROSDriver::~uvcROSDriver()
 {
-	setParam("CAMERA_ENABLE", 0.0f);
-
+	if(serial_port_open_){
+		setParam("CAMERA_ENABLE", 0.0f);
+	}
 	mavlink_message_t message;
 	mavlink_param_value_t param;
 	mavlink_heartbeat_t heartbeat;
@@ -68,25 +69,28 @@ uvcROSDriver::~uvcROSDriver()
 	bool wait=1;
 	std::string str = "CAMERA_ENABLE";
 
-	while(wait){
-
-		int res = sp_.read_message(message);
-		if(res != 0){
-			if(message.msgid==22){
-				mavlink_msg_param_value_decode(&message, &param);
-				if(str.compare(param.param_id)==0 && param.param_value==0){
-					wait = 0;
-				}
-				else{
-					setParam("CAMERA_ENABLE", 0.0f);
-				}
-				//std::cout << "received id " << param.param_id << " value " << param.param_value <<" iteration " 				<< (float) count << std::endl;
-				count++;
+	if(serial_port_open_){
+		while(wait){
+			int res = sp_.read_message(message);
+			if(res == -1){
+				serial_port_open_ = false;
+				break;
 			}
-
+			if(res != 0){
+				if(message.msgid==22){
+					mavlink_msg_param_value_decode(&message, &param);
+					if(str.compare(param.param_id)==0 && param.param_value==0){
+						wait = 0;
+					}
+					else{
+						setParam("CAMERA_ENABLE", 0.0f);
+					}
+					//std::cout << "received id " << param.param_id << " value " << param.param_value <<" iteration " 				<< (float) count << std::endl;
+					count++;
+				}
+			}
 		}
 
-	}
 	printf("Camera Disabled \n");
 	// close serial port
 	sp_.close_serial();
@@ -99,6 +103,7 @@ uvcROSDriver::~uvcROSDriver()
 	// ROS_INFO("Device closed");
 	uvc_unref_device(dev_);
 	uvc_exit(ctx_);
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -108,7 +113,29 @@ void uvcROSDriver::initDevice()
 	// initialize serial port
 	// sp_ = Serial_Port("/dev/ttyUSB0", 115200);
 	sp_ = Serial_Port("/dev/serial/by-id/usb-Cypress_FX3-if02", 115200);
-	sp_.open_serial();
+
+        bool first_fault = true;
+	int open = 0;
+        while (true)
+        {
+        	ros::spinOnce();
+		if(!nh_.ok())
+			return;
+        	open = sp_.open_serial();
+
+        	if (open != -1){
+			serial_port_open_ = true;
+          		break;
+		}
+       		if (first_fault)
+        	{
+          		ROS_ERROR("Couldn't open serialport /dev/serial/by-id/usb-Cypress_FX3-if02. Will retry every second.");
+          		first_fault = false;
+       		 }
+        	sleep(1.0);
+        }
+
+	//sp_.open_serial();
 
 	// initialize camera image publisher
 	switch (n_cameras_) {
@@ -220,7 +247,12 @@ void uvcROSDriver::initDevice()
 	std::cout << "Waiting on device.";
 	fflush(stdout);
 	mavlink_message_t message;
-	int res = sp_.read_message(message);
+	if(serial_port_open_ && nh_.ok()){
+		int res = sp_.read_message(message);
+		if(res == -1){
+			serial_port_open_ = false;
+			return;
+		}
 
 	mavlink_heartbeat_t heartbeat;
 
@@ -238,13 +270,20 @@ void uvcROSDriver::initDevice()
 				ROS_INFO("Got heartbeat from camera");
 			}
 		}
-		res = sp_.read_message(message);
+		if(serial_port_open_ && nh_.ok()){
+			int res = sp_.read_message(message);
+			if(res == -1){
+				serial_port_open_ = false;
+				return;
+			}
+		}
 	}
 
 	//std::cout  << "Device connected" << std::endl;
 	setCalibration(camera_params_);
 	// set flag for completed initializiation
 	device_initialized_ = true;
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -294,8 +333,11 @@ void uvcROSDriver::startDevice()
 			fflush(stdout);
 			//uvc_stop_streaming(devh_);
 			//res = uvc_start_streaming(devh_, &ctrl_, &callback, this, 0);
-
-			setParam("CAMERA_ENABLE",float(camera_config_));
+			
+			if(setParam("CAMERA_ENABLE",float(camera_config_))==-1){
+				ROS_ERROR("Device not initialized!");
+				return;
+			}
 			usleep(200000);
 			// std::cout << "res: " << res << std::endl;
 		}
@@ -525,6 +567,8 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 		setParam("STEREO_CE_CAM1", 0.0f);
 		setParam("STEREO_RE_CAM1", 0.0f);
 		setParam("STEREO_OF_CAM1", 0.0f);
+
+		//setParam("COST_SHIFT", 2.0f);
 
 		//setParam("CAMERA_AUTOEXP",0.0f);
 		//setParam("CAMERA_EXP",480.0f);

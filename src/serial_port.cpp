@@ -144,6 +144,7 @@ read_message(mavlink_message_t &message)
 	// Couldn't read from port
 	else {
 		fprintf(stderr, "ERROR: Could not read from fd %d\n", fd);
+		return -1;
 	}
 
 	// --------------------------------------------------------------------------
@@ -205,7 +206,7 @@ write_message(const mavlink_message_t &message)
 /**
  * throws EXIT_FAILURE if could not open the port
  */
-void
+int
 Serial_Port::
 open_serial()
 {
@@ -213,14 +214,15 @@ open_serial()
 	// --------------------------------------------------------------------------
 	//   OPEN PORT
 	// --------------------------------------------------------------------------
-	printf("OPEN PORT\n");
+	//printf("OPEN PORT\n");
 
 	fd = _open_port(uart_name);
 
 	// Check success
 	if (fd == -1) {
-		printf("failure, could not open port.\n");
-		throw EXIT_FAILURE;
+		//printf("failure, could not open port.\n");
+		return -1;
+		//throw EXIT_FAILURE;
 	}
 
 	// --------------------------------------------------------------------------
@@ -233,12 +235,14 @@ open_serial()
 	// --------------------------------------------------------------------------
 	if (!success) {
 		printf("failure, could not configure port.\n");
-		throw EXIT_FAILURE;
+		//throw EXIT_FAILURE;
+		return -1;
 	}
 
 	if (fd <= 0) {
 		printf("Connection attempt to port %s with %d baud, 8N1 failed, exiting.\n", uart_name, baudrate);
-		throw EXIT_FAILURE;
+		//throw EXIT_FAILURE;
+		return -1;
 	}
 
 	// --------------------------------------------------------------------------
@@ -251,7 +255,7 @@ open_serial()
 
 	printf("\n");
 
-	return;
+	return 0;
 
 }
 

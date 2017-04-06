@@ -83,6 +83,7 @@ private:
 	bool set_calibration_ = false;
 	bool uvc_cb_flag_ = false;
 	bool first_imu_received_flag_ = false;
+	bool serial_port_open_ = false;
 
 	int n_cameras_ = 2;
 	int camera_config_ = 1;

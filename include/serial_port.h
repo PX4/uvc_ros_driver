@@ -124,7 +124,7 @@ public:
 	int read_message(mavlink_message_t &message);
 	int write_message(const mavlink_message_t &message);
 
-	void open_serial();
+	int open_serial();
 	void close_serial();
 
 	void start();
