@@ -280,7 +280,7 @@ void uvcROSDriver::initDevice()
 	}
 
 	//std::cout  << "Device connected" << std::endl;
-	setCalibration(camera_params_);
+	//setCalibration(camera_params_);
 	// set flag for completed initializiation
 	device_initialized_ = true;
 	}
@@ -291,6 +291,9 @@ void uvcROSDriver::initDevice()
 void uvcROSDriver::startDevice()
 {
 	if (device_initialized_) {
+
+		setCalibration(camera_params_);
+
 		// open uvc stream
 		uvc_error_t res = initAndOpenUvc();
 		// start stream
@@ -1072,7 +1075,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 		     (size_t)frame_size, frame->width - 16, frame->height);
 
 	sensor_msgs::fillImage(msg_vio.left_image,
-			       sensor_msgs::image_encodings::MONO8,//BAYER_RGGB8,//
+			       sensor_msgs::image_encodings::BAYER_RGGB8,//MONO8,//
 			       frame->height,      // height
 			       frame->width - 16,  // width
 			       frame->width - 16,  // stepSize

@@ -48,7 +48,7 @@ CameraParameters loadCustomCameraCalibration(const std::string calib_path)
 	// load a camera calibration defined in the launch script
 	try {
 		//wait on inital mount of calib path
-		usleep(2000000);
+		//usleep(2000000);
 		YAML::Node YamlNode = YAML::LoadFile(calib_path);
 
 		if (YamlNode.IsNull()) {
@@ -86,6 +86,14 @@ int main(int argc, char **argv)
 	nh.getParam("cameraConfigFile", calibration_file_path);
 	nh.getParam("calibrationMode", calibration_mode);
 
+	// set parameters
+	uvc_ros_driver.setNumberOfCameras(number_of_cameras);
+	uvc_ros_driver.setUseOFAITMsgs(ait_msgs);
+	uvc_ros_driver.setFlip(flip);
+
+	// initialize device
+	uvc_ros_driver.initDevice();
+
 	// read yaml calibration file from device
 	CameraParameters camParams =
 		loadCustomCameraCalibration(calibration_file_path);
@@ -100,11 +108,8 @@ int main(int argc, char **argv)
 					     (int)homography_import[i][1]));
 	}
 
-	// set parameter
-	uvc_ros_driver.setNumberOfCameras(number_of_cameras);
-	uvc_ros_driver.setUseOFAITMsgs(ait_msgs);
-	uvc_ros_driver.setFlip(flip);
 
+	// set calibration parameters
 	if (camParams.isValid) {
 		uvc_ros_driver.setCalibrationParam(set_calibration);
 		uvc_ros_driver.setUseOfDepthMap(depth_map);
@@ -117,8 +122,7 @@ int main(int argc, char **argv)
 	uvc_ros_driver.setCalibrationMode(calibration_mode);
 	uvc_ros_driver.setCameraParams(camParams);
 	uvc_ros_driver.setHomographyMapping(homography_mapping);
-	// initialize device
-	uvc_ros_driver.initDevice();
+
 	// start device
 	uvc_ros_driver.startDevice();
 	// endless loop
