@@ -5,6 +5,8 @@ idVendor=04b4
 idProduct=00f8
 string="# UVC cameras
 SUBSYSTEMS==\"usb\", ENV{DEVTYPE}==\"usb_device\", ATTRS{idVendor}==\"$idVendor\", ATTRS{idProduct}==\"$idProduct\", MODE=\"0666\"
+# Serial port
+KERNEL=="ttyACM[0-9]*",MODE="0666"
 "
 echo "$string" >> /etc/udev/rules.d/99-uvc.rules
 
