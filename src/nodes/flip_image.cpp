@@ -9,7 +9,6 @@
 image_transport::Publisher pub;
 
 void imageCallback(const sensor_msgs::ImageConstPtr& msg) {
-  ROS_INFO("Image callback.");
   cv::Mat cv_mat;
   cv::flip(cv_bridge::toCvShare(msg, "bgr8")->image, cv_mat, -1);
   sensor_msgs::ImagePtr out_msg = cv_bridge::CvImage(msg->header, "bgr8", cv_mat).toImageMsg();
