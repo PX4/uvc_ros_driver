@@ -175,6 +175,10 @@ add_executable(uvc_ros_driver_node
 	src/nodes/uvc_ros_driver_node.cpp
 )
 
+add_executable(flip_image
+	src/nodes/flip_image.cpp
+)
+
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(uvc_ros_driver_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
@@ -184,6 +188,10 @@ target_link_libraries(uvc_ros_driver_node
   uvc_ros_driver
   ${catkin_LIBRARIES}
   ${YamlCpp_LIBRARIES}
+)
+
+target_link_libraries(flip_image
+  ${catkin_LIBRARIES}
 )
 
 #############
