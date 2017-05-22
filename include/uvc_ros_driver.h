@@ -318,7 +318,8 @@ public:
 
 		// update modulo_ variable also
 		if (calibration_mode != 0) {
-			modulo_ = 12;
+			modulo_ = 4;
+			// modulo_ = 12;
 		}
 	};
 };
