@@ -1,0 +1,18 @@
+<launch>
+
+  <!-- Default launch file. -->
+  <include
+    file = "$(find uvc_ros_driver)/launch/uvc_ros_driver.launch"
+    pass_all_args = "true" >
+  </include>
+
+  <!-- Rqt GUI. -->
+  <node
+    pkg = "rqt_gui"
+    type = "rqt_gui"
+    name = "rqt_gui"
+    args = "--perspective-file $(find uvc_ros_driver)/launch/rqt_perspectives/skyaware_stereo_imu.perspective"
+    output = "screen" >
+  </node>
+
+</launch>
