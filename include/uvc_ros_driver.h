@@ -277,8 +277,8 @@ public:
 
 		case 2:
 		default:
-			camera_config_ = 0x01;
-			// camera_config_ = 0x21;
+			// camera_config_ = 0x01;
+			camera_config_ = 0x21;
 			break;
 		}
 	};

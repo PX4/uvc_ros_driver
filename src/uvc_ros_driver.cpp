@@ -566,7 +566,7 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 		setParam("STEREO_LR_CAM1", 3.0f);
 		// threshold 0-255 valid disparity
 		setParam("STEREO_TH_CAM1", 140.0f);
-		setParam("STEREO_FP_CAM1", 0.0f);
+		setParam("STEREO_FP_CAM1", 1.0f);
 		setParam("STEREO_CE_CAM1", 0.0f);
 		setParam("STEREO_RE_CAM1", 0.0f);
 		setParam("STEREO_OF_CAM1", 0.0f);
