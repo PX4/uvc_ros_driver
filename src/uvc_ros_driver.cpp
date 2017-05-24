@@ -573,8 +573,8 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 
 		//setParam("COST_SHIFT", 2.0f);
 
-		//setParam("CAMERA_AUTOEXP",0.0f);
-		//setParam("CAMERA_EXP",480.0f);
+		setParam("CAMERA_AUTOEXP",0.0f);
+		setParam("CAMERA_EXP", 40.0f);
 		//setParam("CAMERA_AUTOG",0.0f);
 		//setParam("CAMERA_GAIN",63.0f);
 
