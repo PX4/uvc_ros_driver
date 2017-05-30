@@ -11,7 +11,7 @@
     pkg = "rqt_gui"
     type = "rqt_gui"
     name = "rqt_gui"
-    args = "--perspective-file $(find uvc_ros_driver)/launch/rqt_perspectives/skyaware_stereo_imu.perspective"
+    args = "--perspective-file $(find uvc_ros_driver)/launch/rqt_perspectives/skyaware_stereo.perspective"
     output = "screen" >
   </node>
 
