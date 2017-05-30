@@ -897,7 +897,8 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 
     // Static vars are initialized only in the first run. Calculate time offset between current time (ros::Time::now())
     // of host and substract current timestamp of device, as this timestamp depends on the powered on time of the device
-	static ros::Duration time_offset_frame(0.041);
+	// static ros::Duration time_offset_frame(0.041);
+	static ros::Duration time_offset_frame(0.0);
 	static ros::Time fpga_frame_time = ros::Time::now() - time_offset_frame - ros::Duration(double(timestamp/k_ms_to_sec)); //subtract first timestamp
 	static ros::Time fpga_line_time = ros::Time::now() - ros::Duration(double(timestamp/k_ms_to_sec));
 	ros::Duration fpga_time_add(0.0);
