@@ -29,6 +29,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   ait_ros_messages
   image_transport
+  dynamic_reconfigure
 )
 
 ## System dependencies are found with CMake's conventions
@@ -36,6 +37,9 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
 add_definitions(${EIGEN3_DEFINITIONS})
+
+# Add dynamic reconfigure API.
+generate_dynamic_reconfigure_options(cfg/uvc_ros_driver_node.cfg)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -181,7 +185,7 @@ add_executable(flip_image
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-# add_dependencies(uvc_ros_driver_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(uvc_ros_driver_node ${PROJECT_NAME}_gencfg)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(uvc_ros_driver_node

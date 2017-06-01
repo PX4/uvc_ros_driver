@@ -40,6 +40,11 @@
 
 #include "uvc_ros_driver.h"
 
+#include <functional>
+
+#include <dynamic_reconfigure/server.h>
+#include <uvc_ros_driver/UvcDriverConfig.h>
+
 // declare helper function
 CameraParameters loadCustomCameraCalibration(const std::string calib_path)
 {
@@ -64,6 +69,11 @@ CameraParameters loadCustomCameraCalibration(const std::string calib_path)
 	}
 
 	return cp;
+}
+
+void dynamicReconfigureCallback(uvc_ros_driver::UvcDriverConfig& config, uint32_t level)
+{
+	ROS_INFO("Now!");
 }
 
 int main(int argc, char **argv)
@@ -122,6 +132,10 @@ int main(int argc, char **argv)
 	uvc_ros_driver.setCalibrationMode(calibration_mode);
 	uvc_ros_driver.setCameraParams(camParams);
 	uvc_ros_driver.setHomographyMapping(homography_mapping);
+
+	dynamic_reconfigure::Server<uvc_ros_driver::UvcDriverConfig> dynamic_reconfigure_server;
+	dynamic_reconfigure_server.setCallback(std::bind(&dynamicReconfigureCallback,
+				std::placeholders::_1, std::placeholders::_2));
 
 	// start device
 	uvc_ros_driver.startDevice();
