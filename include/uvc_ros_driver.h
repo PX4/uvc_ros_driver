@@ -55,9 +55,11 @@
 #include "camera_info_helper.h"
 
 #include "libuvc/libuvc.h"
+#include "uvc_ros_driver/UvcDriverConfig.h"
 
 #include <ait_ros_messages/VioSensorMsg.h>
 
+#include <dynamic_reconfigure/server.h>
 #include <ros/ros.h>
 #include <ros/package.h>
 #include <std_msgs/String.h>
@@ -186,6 +188,9 @@ private:
 	sensor_msgs::CameraInfo info_cam_8_;
 	sensor_msgs::CameraInfo info_cam_9_;
 
+	// Dynamic reconfigure.
+	dynamic_reconfigure::Server<uvc_ros_driver::UvcDriverConfig> dynamic_reconfigure_;
+
 	int16_t ShortSwap(int16_t s);
 	uvc_error_t initAndOpenUvc();
 	int setParam(const std::string &name, float val);
@@ -198,6 +203,7 @@ private:
 				 uint8_t *array2, size_t mixedLength,
 				 size_t imageWidth, size_t imageHeight);
 	inline void selectCameraInfo(int camera, sensor_msgs::CameraInfo **ci);
+	void dynamicReconfigureCallback(uvc_ros_driver::UvcDriverConfig& config, uint32_t level);
 
 public:
 	uvcROSDriver(ros::NodeHandle nh)

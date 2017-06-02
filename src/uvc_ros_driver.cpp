@@ -42,6 +42,8 @@
 
 #include "uvc_ros_driver.h"
 
+#include <functional>
+
 namespace uvc
 {
 
@@ -293,6 +295,8 @@ void uvcROSDriver::startDevice()
 	if (device_initialized_) {
 
 		setCalibration(camera_params_);
+
+		dynamic_reconfigure_.setCallback(std::bind(&uvcROSDriver::dynamicReconfigureCallback, this, std::placeholders::_1, std::placeholders::_2));
 
 		// open uvc stream
 		uvc_error_t res = initAndOpenUvc();
@@ -806,6 +810,17 @@ inline void uvcROSDriver::selectCameraInfo(int camera,
 		*ci = &info_cam_9_;
 		break;
 	}
+}
+
+void uvcROSDriver::dynamicReconfigureCallback(
+    uvc_ros_driver::UvcDriverConfig &config, uint32_t level)
+{
+    ROS_INFO("Reconfigure Request: %s %f",
+	     config.CAMERA_AUTOEXP ? "True" : "False", config.CAMERA_EXP);
+    setParam("CAMERA_AUTOEXP", static_cast<float>(config.CAMERA_AUTOEXP));
+    setParam("CAMERA_EXP", static_cast<float>(config.CAMERA_EXP));
+    setParam("CAMERA_AUTOG", static_cast<float>(config.CAMERA_AUTOG));
+    setParam("CAMERA_GAIN", static_cast<float>(config.CAMERA_GAIN));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
