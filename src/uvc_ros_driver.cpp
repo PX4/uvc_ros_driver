@@ -43,6 +43,7 @@
 #include "uvc_ros_driver.h"
 
 #include <functional>
+#include <iostream>
 
 namespace uvc
 {
@@ -821,6 +822,9 @@ void uvcROSDriver::dynamicReconfigureCallback(
     setParam("CAMERA_EXP", static_cast<float>(config.CAMERA_EXP));
     setParam("CAMERA_AUTOG", static_cast<float>(config.CAMERA_AUTOG));
     setParam("CAMERA_GAIN", static_cast<float>(config.CAMERA_GAIN));
+
+    setParam("RESETMT9V034", 1.0f);
+    setParam("RESETICM20608",1.0f);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
