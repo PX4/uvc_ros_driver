@@ -816,14 +816,14 @@ inline void uvcROSDriver::selectCameraInfo(int camera,
 void uvcROSDriver::dynamicReconfigureCallback(
     uvc_ros_driver::UvcDriverConfig &config, uint32_t level)
 {
-    setParam("CAMERA_AUTOEXP", static_cast<float>(config.CAMERA_AUTOEXP));
-    setParam("CAMERA_EXP", static_cast<float>(config.CAMERA_EXP));
-    setParam("CAMERA_AUTOG", static_cast<float>(config.CAMERA_AUTOG));
-    setParam("CAMERA_GAIN", static_cast<float>(config.CAMERA_GAIN));
+	setParam("CAMERA_AUTOEXP", static_cast<float>(config.CAMERA_AUTOEXP));
+	setParam("CAMERA_EXP", static_cast<float>(config.CAMERA_EXP));
+	setParam("CAMERA_AUTOG", static_cast<float>(config.CAMERA_AUTOG));
+	setParam("CAMERA_GAIN", static_cast<float>(config.CAMERA_GAIN));
 
-    setParam("ADIS_IMU", static_cast<float>(config.ADIS_IMU));
+	setParam("ADIS_IMU", static_cast<float>(config.ADIS_IMU));
 
-    setParam("UPDATEMT9V034", 1.0f);
+	setParam("UPDATEMT9V034", 1.0f);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
