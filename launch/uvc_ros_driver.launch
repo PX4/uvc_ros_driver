@@ -29,4 +29,5 @@
     <rosparam command="load" file="$(find uvc_ros_driver)/params/homography_mapping.yaml" />
   </node>
 
+  <node pkg="uvc_ros_driver" name="depth_map_colorizer" type="depth_map_colorizer" output="screen" />
 </launch>
