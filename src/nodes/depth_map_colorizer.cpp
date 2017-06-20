@@ -137,7 +137,7 @@ int main(int argc, char **argv)
 		}
 	} 
 
-	// Reserve space such that the publishers-vector doesn't move elements in memory
+	// Reserve space so the publishers-vector doesn't move elements in memory
 	int n = depth_topics.size();
 	std::vector<DepthMapPublisher> publishers;
 	publishers.reserve(n);
