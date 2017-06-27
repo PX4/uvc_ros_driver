@@ -103,8 +103,12 @@ private:
 	// TODO: add other camera parameters
 	// float ....
 
-	const double acc_scale_factor = 16384.0;
-	const double gyr_scale_factor = 131.0;
+	// const double acc_scale_factor = 16384.0;
+	// const double gyr_scale_factor = 131.0;
+
+	// Scaling factors for ADIS.
+	const double acc_scale_factor = 4000.0;
+	const double gyr_scale_factor = 100.0;
 	const double deg2rad = 2 * M_PI / 360.0;
 	const double k_ms_to_sec = 1000000.0;
 
