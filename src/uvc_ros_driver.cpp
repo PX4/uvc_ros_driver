@@ -818,6 +818,8 @@ void uvcROSDriver::dynamicReconfigureCallback(
 {
 	setParam("CAMERA_AUTOEXP", static_cast<float>(config.CAMERA_AUTOEXP));
 	setParam("CAMERA_EXP", static_cast<float>(config.CAMERA_EXP));
+	setParam("CAMERA_MIN_E", static_cast<float>(config.CAMERA_MIN_E));
+	setParam("CAMERA_MAX_E", static_cast<float>(config.CAMERA_MAX_E));
 	setParam("CAMERA_AUTOG", static_cast<float>(config.CAMERA_AUTOG));
 	setParam("CAMERA_GAIN", static_cast<float>(config.CAMERA_GAIN));
 
