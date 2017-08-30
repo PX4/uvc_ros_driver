@@ -55,9 +55,11 @@
 #include "camera_info_helper.h"
 
 #include "libuvc/libuvc.h"
+#include "uvc_ros_driver/UvcDriverConfig.h"
 
 #include <ait_ros_messages/VioSensorMsg.h>
 
+#include <dynamic_reconfigure/server.h>
 #include <ros/ros.h>
 #include <ros/package.h>
 #include <std_msgs/String.h>
@@ -101,8 +103,12 @@ private:
 	// TODO: add other camera parameters
 	// float ....
 
-	const double acc_scale_factor = 16384.0;
-	const double gyr_scale_factor = 131.0;
+	// const double acc_scale_factor = 16384.0;
+	// const double gyr_scale_factor = 131.0;
+
+	// Scaling factors for ADIS.
+	const double acc_scale_factor = 4000.0;
+	const double gyr_scale_factor = 100.0;
 	const double deg2rad = 2 * M_PI / 360.0;
 	const double k_ms_to_sec = 1000000.0;
 
@@ -186,6 +192,9 @@ private:
 	sensor_msgs::CameraInfo info_cam_8_;
 	sensor_msgs::CameraInfo info_cam_9_;
 
+	// Dynamic reconfigure.
+	dynamic_reconfigure::Server<uvc_ros_driver::UvcDriverConfig> dynamic_reconfigure_;
+
 	int16_t ShortSwap(int16_t s);
 	uvc_error_t initAndOpenUvc();
 	int setParam(const std::string &name, float val);
@@ -198,6 +207,7 @@ private:
 				 uint8_t *array2, size_t mixedLength,
 				 size_t imageWidth, size_t imageHeight);
 	inline void selectCameraInfo(int camera, sensor_msgs::CameraInfo **ci);
+	void dynamicReconfigureCallback(uvc_ros_driver::UvcDriverConfig& config, uint32_t level);
 
 public:
 	uvcROSDriver(ros::NodeHandle nh)
@@ -257,12 +267,12 @@ public:
 
 		switch (n_cameras) {
 		case 10:
-			//camera_config_ = 0x01F;
-			camera_config_ = 0x3FF;
+			camera_config_ = 0x01F;
+			// camera_config_ = 0x3FF;
 			break;
 		case 8:
-			//camera_config_ = 0x00F;
-			camera_config_ = 0x1EF;
+			camera_config_ = 0x00F;
+			// camera_config_ = 0x1EF;
 			break;
 
 		case 6:
@@ -277,6 +287,7 @@ public:
 
 		case 2:
 		default:
+			// camera_config_ = 0x01;
 			camera_config_ = 0x21;
 			break;
 		}
@@ -317,7 +328,8 @@ public:
 
 		// update modulo_ variable also
 		if (calibration_mode != 0) {
-			modulo_ = 12;
+			modulo_ = 4;
+			// modulo_ = 12;
 		}
 	};
 };

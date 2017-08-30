@@ -6,6 +6,18 @@ project(uvc_ros_driver)
 set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS} -Wno-format-security ${NEON_FLAGS}")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${NEON_FLAGS}")
 
+find_package(PkgConfig)
+
+find_package(yaml_cpp_catkin QUIET)
+if(${yaml_cpp_catkin_FOUND})
+  message(STATUS "Found yaml_cpp_catkin, using instead of system library.")
+  set(YamlCpp_LIBRARIES ${yaml_cpp_catkin_LIBRARIES})
+  set(YamlCpp_INCLUDE_DIRS ${yaml_cpp_catkin_INCLUDE_DIRS})
+else()
+  message(STATUS "No yaml_cpp_catkin, using yaml-cpp system library instead.")
+  pkg_check_modules(YamlCpp REQUIRED yaml-cpp>=0.5)
+endif()
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -17,6 +29,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   ait_ros_messages
   image_transport
+  dynamic_reconfigure
 )
 
 ## System dependencies are found with CMake's conventions
@@ -24,6 +37,9 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
 add_definitions(${EIGEN3_DEFINITIONS})
+
+# Add dynamic reconfigure API.
+generate_dynamic_reconfigure_options(cfg/uvc_ros_driver_node.cfg)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -117,7 +133,7 @@ catkin_package(
   LIBRARIES uvc_ros_driver
   CATKIN_DEPENDS roscpp roslib image_transport
 #  DEPENDS system_lib
-  DEPENDS yaml-cpp
+  DEPENDS YamlCpp
 )
 
 ###########
@@ -130,6 +146,7 @@ catkin_package(
 include_directories(
   ${catkin_INCLUDE_DIRS}
   ${Eigen3_INCLUDE_DIRS}
+  ${YamlCpp_INCLUDE_DIRS}
   include
   /usr/include/libusb-1.0
   src/nodes/c_library
@@ -147,7 +164,9 @@ add_library(uvc_ros_driver SHARED
 target_link_libraries(uvc_ros_driver
   yaml-cpp
   ${catkin_LIBRARIES}
+  #${LibUVC_LIBRARIES}
   /usr/local/lib/libuvc.so #TODO link by usign find_package
+  ${YamlCpp_LIBRARIES}
 )
 
 ## Add cmake target dependencies of the library
@@ -162,12 +181,13 @@ add_executable(uvc_ros_driver_node
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-# add_dependencies(uvc_ros_driver_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(uvc_ros_driver_node ${PROJECT_NAME}_gencfg)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(uvc_ros_driver_node
   uvc_ros_driver
   ${catkin_LIBRARIES}
+  ${YamlCpp_LIBRARIES}
 )
 
 #############

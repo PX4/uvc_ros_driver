@@ -42,6 +42,9 @@
 
 #include "uvc_ros_driver.h"
 
+#include <functional>
+#include <iostream>
+
 namespace uvc
 {
 
@@ -293,6 +296,8 @@ void uvcROSDriver::startDevice()
 	if (device_initialized_) {
 
 		setCalibration(camera_params_);
+
+		dynamic_reconfigure_.setCallback(std::bind(&uvcROSDriver::dynamicReconfigureCallback, this, std::placeholders::_1, std::placeholders::_2));
 
 		// open uvc stream
 		uvc_error_t res = initAndOpenUvc();
@@ -566,17 +571,18 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 		setParam("STEREO_LR_CAM1", 3.0f);
 		// threshold 0-255 valid disparity
 		setParam("STEREO_TH_CAM1", 140.0f);
-		setParam("STEREO_FP_CAM1", 0.0f);
+		setParam("STEREO_FP_CAM1", 1.0f);
 		setParam("STEREO_CE_CAM1", 0.0f);
 		setParam("STEREO_RE_CAM1", 0.0f);
 		setParam("STEREO_OF_CAM1", 0.0f);
 
 		//setParam("COST_SHIFT", 2.0f);
 
-		//setParam("CAMERA_AUTOEXP",0.0f);
-		//setParam("CAMERA_EXP",480.0f);
-		//setParam("CAMERA_AUTOG",0.0f);
-		//setParam("CAMERA_GAIN",63.0f);
+		setParam("CAMERA_AUTOEXP", 1.0f);
+		setParam("CAMERA_MAX_E", 60.0f);
+		// setParam("CAMERA_EXP", 10.0f);
+		// setParam("CAMERA_AUTOG",0.0f);
+		// setParam("CAMERA_GAIN",63.0f);
 
 		setParam("STEREO_MP_01", 0.0f);
 		setParam("STEREO_BAYER_D", 0.0f);
@@ -807,6 +813,21 @@ inline void uvcROSDriver::selectCameraInfo(int camera,
 	}
 }
 
+void uvcROSDriver::dynamicReconfigureCallback(
+    uvc_ros_driver::UvcDriverConfig &config, uint32_t level)
+{
+	setParam("CAMERA_AUTOEXP", static_cast<float>(config.CAMERA_AUTOEXP));
+	setParam("CAMERA_EXP", static_cast<float>(config.CAMERA_EXP));
+	setParam("CAMERA_MIN_E", static_cast<float>(config.CAMERA_MIN_E));
+	setParam("CAMERA_MAX_E", static_cast<float>(config.CAMERA_MAX_E));
+	setParam("CAMERA_AUTOG", static_cast<float>(config.CAMERA_AUTOG));
+	setParam("CAMERA_GAIN", static_cast<float>(config.CAMERA_GAIN));
+
+	setParam("ADIS_IMU", static_cast<float>(config.ADIS_IMU));
+
+	setParam("UPDATEMT9V034", 1.0f);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 inline void uvcROSDriver::deinterleave(const uint8_t *mixed, uint8_t *array1,
@@ -897,7 +918,8 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 
     // Static vars are initialized only in the first run. Calculate time offset between current time (ros::Time::now())
     // of host and substract current timestamp of device, as this timestamp depends on the powered on time of the device
-	static ros::Duration time_offset_frame(0.041);
+	// static ros::Duration time_offset_frame(0.041);
+	static ros::Duration time_offset_frame(0.0);
 	static ros::Time fpga_frame_time = ros::Time::now() - time_offset_frame - ros::Duration(double(timestamp/k_ms_to_sec)); //subtract first timestamp
 	static ros::Time fpga_line_time = ros::Time::now() - ros::Duration(double(timestamp/k_ms_to_sec));
 	ros::Duration fpga_time_add(0.0);
@@ -1075,7 +1097,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 		     (size_t)frame_size, frame->width - 16, frame->height);
 
 	sensor_msgs::fillImage(msg_vio.left_image,
-			       sensor_msgs::image_encodings::BAYER_RGGB8,//MONO8,//
+			       sensor_msgs::image_encodings::MONO8,//BAYER_RGGB8,//
 			       frame->height,      // height
 			       frame->width - 16,  // width
 			       frame->width - 16,  // stepSize

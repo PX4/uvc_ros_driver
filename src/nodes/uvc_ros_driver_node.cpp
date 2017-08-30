@@ -40,6 +40,8 @@
 
 #include "uvc_ros_driver.h"
 
+#include <functional>
+
 // declare helper function
 CameraParameters loadCustomCameraCalibration(const std::string calib_path)
 {
@@ -65,6 +67,13 @@ CameraParameters loadCustomCameraCalibration(const std::string calib_path)
 
 	return cp;
 }
+
+//void dynamicReconfigureCallback(uvc_ros_driver::UvcDriverConfig& config, uint32_t level)
+//{
+  //ROS_INFO("Reconfigure Request: %s %f",
+            //config.CAMERA_AUTOEXP? "True" : "False",
+            //config.CAMERA_EXP);
+//}
 
 int main(int argc, char **argv)
 {
