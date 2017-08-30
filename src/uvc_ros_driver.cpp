@@ -571,7 +571,7 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 		setParam("STEREO_LR_CAM1", 3.0f);
 		// threshold 0-255 valid disparity
 		setParam("STEREO_TH_CAM1", 140.0f);
-		setParam("STEREO_FP_CAM1", 1.0f);
+		setParam("STEREO_FP_CAM1", 0.0f);
 		setParam("STEREO_CE_CAM1", 0.0f);
 		setParam("STEREO_RE_CAM1", 0.0f);
 		setParam("STEREO_OF_CAM1", 0.0f);
@@ -824,8 +824,13 @@ void uvcROSDriver::dynamicReconfigureCallback(
 	setParam("CAMERA_GAIN", static_cast<float>(config.CAMERA_GAIN));
 
 	setParam("ADIS_IMU", static_cast<float>(config.ADIS_IMU));
-
+	//update camera parameters in FPGA
 	setParam("UPDATEMT9V034", 1.0f);
+
+	setParam("STEREO_TH_CAM1", static_cast<float>(config.STEREO_TH_CAM1));
+	setParam("STEREO_LR_CAM1", static_cast<float>(config.STEREO_LR_CAM1));
+	//update stereo parameters in FPGA
+	setParam("SETCALIB", 1.0f);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1097,7 +1102,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 		     (size_t)frame_size, frame->width - 16, frame->height);
 
 	sensor_msgs::fillImage(msg_vio.left_image,
-			       sensor_msgs::image_encodings::MONO8,//BAYER_RGGB8,//
+			       sensor_msgs::image_encodings::BAYER_RGGB8,//
 			       frame->height,      // height
 			       frame->width - 16,  // width
 			       frame->width - 16,  // stepSize
