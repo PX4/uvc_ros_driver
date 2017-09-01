@@ -578,8 +578,8 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 
 		//setParam("COST_SHIFT", 2.0f);
 
-		setParam("CAMERA_AUTOEXP", 1.0f);
-		setParam("CAMERA_MAX_E", 60.0f);
+		//setParam("CAMERA_AUTOEXP", 1.0f);
+		//setParam("CAMERA_MAX_E", 60.0f);
 		// setParam("CAMERA_EXP", 10.0f);
 		// setParam("CAMERA_AUTOG",0.0f);
 		// setParam("CAMERA_GAIN",63.0f);
@@ -829,6 +829,7 @@ void uvcROSDriver::dynamicReconfigureCallback(
 
 	setParam("STEREO_TH_CAM1", static_cast<float>(config.STEREO_TH_CAM1));
 	setParam("STEREO_LR_CAM1", static_cast<float>(config.STEREO_LR_CAM1));
+	setParam("STEREO_OF_CAM1", static_cast<float>(config.STEREO_OF_CAM1));
 	//update stereo parameters in FPGA
 	setParam("SETCALIB", 1.0f);
 }

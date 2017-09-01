@@ -1,7 +1,7 @@
 <launch>
 
   <arg name="flip" default="false" />     <!-- Horizontal + Vertical flip -->
-  <arg name="numberOfCameras" default="10" />
+  <arg name="numberOfCameras" default="2" />
   <!-- upload calibration to fpga -->
   <arg name="setCalibration" default="true" />
   <!-- use of the AIT ROS message warapper -->
