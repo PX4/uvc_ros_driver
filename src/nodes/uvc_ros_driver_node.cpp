@@ -84,7 +84,7 @@ int main(int argc, char **argv)
 
 	// get params from launch file
 	bool flip, set_calibration, depth_map, calibration_mode, ait_msgs;
-	int camera_config, number_of_cameras;
+	int number_of_cameras;
 	std::string calibration_file_path;
 	// TODO: check if parameter exist
 	nh.getParam("flip", flip);

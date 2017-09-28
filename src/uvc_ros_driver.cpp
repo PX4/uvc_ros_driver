@@ -67,8 +67,7 @@ uvcROSDriver::~uvcROSDriver()
 	}
 	mavlink_message_t message;
 	mavlink_param_value_t param;
-	mavlink_heartbeat_t heartbeat;
-	int count = 0;
+	//mavlink_heartbeat_t heartbeat;
 	bool wait=1;
 	std::string str = "CAMERA_ENABLE";
 
@@ -88,8 +87,6 @@ uvcROSDriver::~uvcROSDriver()
 					else{
 						setParam("CAMERA_ENABLE", 0.0f);
 					}
-					//std::cout << "received id " << param.param_id << " value " << param.param_value <<" iteration " 				<< (float) count << std::endl;
-					count++;
 				}
 			}
 		}
@@ -137,8 +134,6 @@ void uvcROSDriver::initDevice()
        		 }
         	sleep(1.0);
         }
-
-	//sp_.open_serial();
 
 	// initialize camera image publisher
 	switch (n_cameras_) {
@@ -246,7 +241,7 @@ void uvcROSDriver::initDevice()
 	// initialize imu msg publisher
 	imu0_publisher_ = nh_.advertise<sensor_msgs::Imu>("cam_0/imu", 20);
 	imu1_publisher_ = nh_.advertise<sensor_msgs::Imu>("cam_1/imu", 20);
-	// wait on heart beat
+	// wait on heartbeat
 	std::cout << "Waiting on device.";
 	fflush(stdout);
 	mavlink_message_t message;
@@ -282,8 +277,6 @@ void uvcROSDriver::initDevice()
 		}
 	}
 
-	//std::cout  << "Device connected" << std::endl;
-	//setCalibration(camera_params_);
 	// set flag for completed initializiation
 	device_initialized_ = true;
 	}
@@ -297,58 +290,35 @@ void uvcROSDriver::startDevice()
 
 		setCalibration(camera_params_);
 
-		dynamic_reconfigure_.setCallback(std::bind(&uvcROSDriver::dynamicReconfigureCallback, this, std::placeholders::_1, std::placeholders::_2));
-
 		// open uvc stream
 		uvc_error_t res = initAndOpenUvc();
+		if (res < 0) {
+			uvc_perror(res, "uvc_init");
+			ROS_ERROR("Unable to open uvc device");
+			return;
+		}
+
 		// start stream
 		past_ = ros::Time::now();
 		res = uvc_start_streaming(devh_, &ctrl_, &callback, this, 0);
-			//mavlink_param_value_t param;
-			//bool wait=1;
-			//std::string str = "CAMERA_ENABLE";
+	
 		setParam("CAMERA_ENABLE",float(camera_config_));
-			//printf("Wait on camera \n");
-		//usleep(200000);
 
-		/*while(!uvc_cb_flag_ && ros::ok()){
-				/*mavlink_message_t message;
-				int res = sp_.read_message(message);
-				if(res != 0){
-					if(message.msgid==22){
-						//printf("got message id 22...\n");
-						mavlink_msg_param_value_decode(&message, &param);
-						if(str.compare(param.param_id)==0 && param.param_value==float(camera_config_)){
-							wait = 0;
-							printf("camera started\n");
-						}
-						else{
-							setParam("CAMERA_ENABLE",float(camera_config_));
-							std::cout << "." ;
-						}
-					}
+		setCalibration(camera_params_);
 
-				}*/
-				//std::cout << "." ;
-			/*setParam("CAMERA_ENABLE",float(camera_config_));
-			usleep(200000);
-		}*/
-
-			//printf(" done\n");
 		printf("Waiting on stream");
 		while (!uvc_cb_flag_ && ros::ok()) {
 			printf(".");
 			fflush(stdout);
-			//uvc_stop_streaming(devh_);
-			//res = uvc_start_streaming(devh_, &ctrl_, &callback, this, 0);
-			
+			//re-enable
 			if(setParam("CAMERA_ENABLE",float(camera_config_))==-1){
 				ROS_ERROR("Device not initialized!");
 				return;
 			}
 			usleep(200000);
-			// std::cout << "res: " << res << std::endl;
 		}
+		ROS_INFO("Enabled Dynamic Reconfigure Callback");
+		dynamic_reconfigure_.setCallback(std::bind(&uvcROSDriver::dynamicReconfigureCallback, this, std::placeholders::_1, std::placeholders::_2));
 
 	} else {
 		ROS_ERROR("Device not initialized!");
@@ -865,7 +835,7 @@ inline void uvcROSDriver::deinterleave(const uint8_t *mixed, uint8_t *array1,
 
 #endif
 
-	while (c < imageWidth * imageHeight) {
+	while (c < int(imageWidth * imageHeight)) {
 		array1[c] = mixed[2 * i];
 		array2[c] = mixed[2 * i + 1];
 		i++;
@@ -958,8 +928,8 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 
 		count = count & 0x00FF;
 
-		double temperature = double(ShortSwap(static_cast<int16_t *>(
-				frame->data)[int((i + 1) * frame->width - 8 + 1)]));
+		//double temperature = double(ShortSwap(static_cast<int16_t *>(
+		//		frame->data)[int((i + 1) * frame->width - 8 + 1)]));
 
 		double acc_x = double(ShortSwap(static_cast<int16_t *>(
 							frame->data)[int((i + 1) * frame->width - 8 + 2)])) /
