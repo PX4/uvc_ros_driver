@@ -109,8 +109,10 @@ private:
 	// homography variables
 	std::vector<std::pair<int, int>> homography_mapping_;
 	std::vector<double> f_;
-	std::vector<Eigen::Vector2d> p_;
-	std::vector<Eigen::Matrix3d> H_;
+	std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d>>
+	  p_;
+	std::vector<Eigen::Matrix3d, Eigen::aligned_allocator<Eigen::Matrix3d>>
+	  H_;
 
 	CameraParameters camera_params_;
 	// serial port
