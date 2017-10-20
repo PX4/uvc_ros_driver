@@ -1,8 +1,12 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(uvc_ros_driver)
 
-# If traget is an ARM processor uncomment this line to compile with NEON instruction.
-# set(NEON_FLAGS "-DENABLE_NEON -mfloat-abi=hard -mfpu=neon-vfpv4 -mcpu=cortex-a15 -Ofast")
+# Check if Neon instructions are available.
+include(cmake/FindARM.cmake)
+
+if (NEON_FOUND)
+  set(NEON_FLAGS "-DENABLE_NEON -mfloat-abi=hard -mfpu=neon-vfpv4 -mcpu=cortex-a15 -Ofast")
+endif(NEON_FOUND)
 set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS} -Wno-format-security ${NEON_FLAGS}")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${NEON_FLAGS}")
 
