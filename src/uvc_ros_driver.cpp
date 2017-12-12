@@ -152,6 +152,9 @@ void uvcROSDriver::initDevice()
 				     node_name_ + "/cam_8/image_depth", 5);
 		cam_8d_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
 					  node_name_ + "/cam_8/camera_info", 5);
+		// initialize imu msg publisher
+		imu8_publisher_ = nh_.advertise<sensor_msgs::Imu>("cam_8/imu", 20);
+		imu9_publisher_ = nh_.advertise<sensor_msgs::Imu>("cam_9/imu", 20);
 
 	case 9:
 		cam_8_pub_ = nh_.advertise<sensor_msgs::Image>(
@@ -172,6 +175,9 @@ void uvcROSDriver::initDevice()
 				     node_name_ + "/cam_6/image_depth", 5);
 		cam_6d_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
 					  node_name_ + "/cam_6/camera_info", 5);
+		// initialize imu msg publisher
+		imu6_publisher_ = nh_.advertise<sensor_msgs::Imu>("cam_6/imu", 20);
+		imu7_publisher_ = nh_.advertise<sensor_msgs::Imu>("cam_7/imu", 20);
 
 	case 7:
 		cam_6_pub_ = nh_.advertise<sensor_msgs::Image>(
@@ -192,6 +198,9 @@ void uvcROSDriver::initDevice()
 				     node_name_ + "/cam_4/image_depth", 5);
 		cam_4d_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
 					  node_name_ + "/cam_4/camera_info", 5);
+		// initialize imu msg publisher
+		imu4_publisher_ = nh_.advertise<sensor_msgs::Imu>("cam_4/imu", 20);
+		imu5_publisher_ = nh_.advertise<sensor_msgs::Imu>("cam_5/imu", 20);
 
 	case 5:
 		cam_4_pub_ = nh_.advertise<sensor_msgs::Image>(
@@ -212,6 +221,9 @@ void uvcROSDriver::initDevice()
 				     node_name_ + "/cam_2/image_depth", 5);
 		cam_2d_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
 					  node_name_ + "/cam_2/camera_info", 5);
+		// initialize imu msg publisher
+		imu2_publisher_ = nh_.advertise<sensor_msgs::Imu>("cam_2/imu", 20);
+		imu3_publisher_ = nh_.advertise<sensor_msgs::Imu>("cam_3/imu", 20);
 
 	case 3:
 		cam_2_pub_ = nh_.advertise<sensor_msgs::Image>(
@@ -232,6 +244,9 @@ void uvcROSDriver::initDevice()
 				     node_name_ + "/cam_0/image_depth", 5);
 		cam_0d_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
 					  node_name_ + "/cam_0/camera_info", 5);
+		// initialize imu msg publisher
+		imu0_publisher_ = nh_.advertise<sensor_msgs::Imu>("cam_0/imu", 20);
+		imu1_publisher_ = nh_.advertise<sensor_msgs::Imu>("cam_1/imu", 20);
 
 	default:
 		cam_0_pub_ = nh_.advertise<sensor_msgs::Image>(
@@ -240,9 +255,7 @@ void uvcROSDriver::initDevice()
 					  node_name_ + "/cam_0/camera_info", 5);
 	}
 
-	// initialize imu msg publisher
-	imu0_publisher_ = nh_.advertise<sensor_msgs::Imu>("cam_0/imu", 20);
-	imu1_publisher_ = nh_.advertise<sensor_msgs::Imu>("cam_1/imu", 20);
+
 	// wait on heart beat
 	std::cout << "Waiting on device.";
 	fflush(stdout);
@@ -580,7 +593,8 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 
 		setParam("STEREO_MP_01", 0.0f);
 		setParam("STEREO_BAYER_D", 0.0f);
-		setParam("IMU_ENABLE", 2.0f);
+		setParam("IMU_ENABLE",(float)n_cameras_);
+		setParam("ADIS_IMU",0.0f);
 
 		setParam("STEREO_P1_CAM3", 10.0f);
 		setParam("STEREO_P2_CAM3", 250.0f);
@@ -1037,9 +1051,46 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 
 			msg_vio.imu.push_back(msg_imu);
 
-			if (imu_id == 1){
+			//if (imu_id == 1){
+			//	imu1_publisher_.publish(msg_imu);
+			//} else {
+			//	imu0_publisher_.publish(msg_imu);
+			//}
+
+			//ROS_INFO("imuid = %d",imu_id);
+
+			switch(imu_id){
+			case 0:
+				imu0_publisher_.publish(msg_imu);
+				break;
+			case 1:
 				imu1_publisher_.publish(msg_imu);
-			} else {
+				break;
+			case 2:
+				imu2_publisher_.publish(msg_imu);
+				break;
+			case 3:
+				imu3_publisher_.publish(msg_imu);
+				break;
+			case 4:
+				imu4_publisher_.publish(msg_imu);
+				break;
+			case 5:
+				imu5_publisher_.publish(msg_imu);
+				break;
+			case 6:
+				imu6_publisher_.publish(msg_imu);
+				break;
+			case 7:
+				imu7_publisher_.publish(msg_imu);
+				break;
+			case 8:
+				imu8_publisher_.publish(msg_imu);
+				break;
+			case 9:
+				imu9_publisher_.publish(msg_imu);
+				break;
+			default:
 				imu0_publisher_.publish(msg_imu);
 			}
 
@@ -1074,7 +1125,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 		     (size_t)frame_size, frame->width - 16, frame->height);
 
 	sensor_msgs::fillImage(msg_vio.left_image,
-			       sensor_msgs::image_encodings::BAYER_RGGB8,//MONO8,//
+			       sensor_msgs::image_encodings::BAYER_RGGB8,//
 			       frame->height,      // height
 			       frame->width - 16,  // width
 			       frame->width - 16,  // stepSize

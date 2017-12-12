@@ -87,8 +87,8 @@ private:
 
 	int n_cameras_ = 2;
 	int camera_config_ = 1;
-	int raw_width_ = 768;
-	int raw_height_ = 480;
+	int raw_width_ = 752+16;//376+16;//
+	int raw_height_ = 480;//240;//
 	int width_ = raw_width_ - 16;
 	int height_ = raw_height_;
 	int frameCounter_ = 0;
@@ -174,6 +174,14 @@ private:
 	// imu publishers
 	ros::Publisher imu0_publisher_;
 	ros::Publisher imu1_publisher_;
+	ros::Publisher imu2_publisher_;
+	ros::Publisher imu3_publisher_;
+	ros::Publisher imu4_publisher_;
+	ros::Publisher imu5_publisher_;
+	ros::Publisher imu6_publisher_;
+	ros::Publisher imu7_publisher_;
+	ros::Publisher imu8_publisher_;
+	ros::Publisher imu9_publisher_;
 	// camera info
 	sensor_msgs::CameraInfo info_cam_0_;
 	sensor_msgs::CameraInfo info_cam_1_;
