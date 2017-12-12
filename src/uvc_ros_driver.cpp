@@ -793,13 +793,45 @@ void uvcROSDriver::dynamicReconfigureCallback(
 	setParam("CAMERA_AUTOG", static_cast<float>(config.CAMERA_AUTOG));
 	setParam("CAMERA_GAIN", static_cast<float>(config.CAMERA_GAIN));
 
+	setParam("IM_H_FLIP_CAM0", static_cast<float>(config.CAMERA_0_HFLIP));
+	setParam("IM_V_FLIP_CAM0", static_cast<float>(config.CAMERA_0_VFLIP));
+
 	setParam("ADIS_IMU", static_cast<float>(config.ADIS_IMU));
 	//update camera parameters in FPGA
 	setParam("UPDATEMT9V034", 1.0f);
 
+	switch (static_cast<bool>(config.STEREO_EN_CAM1)) {
+		case true:
+			camera_config_ = camera_config_ | 0x20;
+			break;
+
+		case false:
+		default:
+			camera_config_ = camera_config_ & 0x3DF;
+			break;
+		}
+
+	switch (static_cast<bool>(config.STEREO_EN_CAM3)) {
+		case true:
+			camera_config_ = camera_config_ | 0x40;
+			break;
+
+		case false:
+		default:
+			camera_config_ = camera_config_ & 0x3BF;
+			break;
+		}
+
+	setParam("CAMERA_ENABLE",float(camera_config_));
+
+	setParam("STEREO_RE_CAM1", static_cast<float>(config.STEREO_RE_CAM1));
+	setParam("STEREO_CE_CAM1", static_cast<float>(config.STEREO_CE_CAM1));
 	setParam("STEREO_TH_CAM1", static_cast<float>(config.STEREO_TH_CAM1));
 	setParam("STEREO_LR_CAM1", static_cast<float>(config.STEREO_LR_CAM1));
 	setParam("STEREO_OF_CAM1", static_cast<float>(config.STEREO_OF_CAM1));
+	setParam("STEREO_P1_CAM1", static_cast<float>(config.STEREO_P1_CAM1));
+	setParam("STEREO_P2_CAM1", static_cast<float>(config.STEREO_P2_CAM1));
+	setParam("STEREO_BAYER_D", static_cast<float>(config.STEREO_BAYER_D));
 	//update stereo parameters in FPGA
 	setParam("SETCALIB", 1.0f);
 }
