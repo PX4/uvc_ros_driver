@@ -15,6 +15,7 @@
   <arg name="cameraConfig" default="1" />
   <!-- calibration file in folder calib -->
   <arg name="cameraConfigFile" default="/media/camera/calibration.yaml" />
+  <arg name="depthMapColorizer" default="false" />
 
   <!-- camera node -->
   <node pkg="uvc_ros_driver" name="uvc_camera" type="uvc_ros_driver_node" output="screen">
@@ -29,4 +30,7 @@
     <rosparam command="load" file="$(find uvc_ros_driver)/params/homography_mapping.yaml" />
   </node>
 
+  <group if="$(arg depthMapColorizer)">
+    <node pkg="uvc_ros_driver" name="depth_map_colorizer" type="depth_map_colorizer" output="screen" />
+  </group>
 </launch>

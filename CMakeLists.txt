@@ -167,6 +167,10 @@ add_executable(uvc_ros_driver_node
 	src/nodes/uvc_ros_driver_node.cpp
 )
 
+add_executable(depth_map_colorizer
+	src/nodes/depth_map_colorizer.cpp
+)
+
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(uvc_ros_driver_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
@@ -174,6 +178,10 @@ add_executable(uvc_ros_driver_node
 ## Specify libraries to link a library or executable target against
 target_link_libraries(uvc_ros_driver_node
   uvc_ros_driver
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(depth_map_colorizer
   ${catkin_LIBRARIES}
 )
 
