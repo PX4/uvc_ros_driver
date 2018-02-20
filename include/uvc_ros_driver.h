@@ -81,6 +81,7 @@ private:
 	bool device_initialized_ = false;
 	bool enable_ait_vio_msg_ = false;
 	bool flip_ = false;
+	bool primary_camera_mode_ = false;
 	bool depth_map_ = false;
 	bool set_calibration_ = false;
 	bool uvc_cb_flag_ = false;
@@ -89,13 +90,14 @@ private:
 
 	int n_cameras_ = 2;
 	int camera_config_ = 1;
-	int raw_width_ = 768;
+	int raw_width_ = 752+16;
 	int raw_height_ = 480;
 	int width_ = raw_width_ - 16;
 	int height_ = raw_height_;
 	int frameCounter_ = 0;
 	int modulo_ = 1;
 	int calibration_mode_ = 0;
+	bool shutdown_ = 0;
 
 	ros::Duration imu_dt_ = ros::Duration(0.0);
   ros::Time timestamp_prev_imu_msg_;
@@ -198,7 +200,9 @@ private:
 	int16_t ShortSwap(int16_t s);
 	uvc_error_t initAndOpenUvc();
 	int setParam(const std::string &name, float val);
-	void sendCameraParam(const int camera_number, const double fx,
+	void sendCameraParam(const int camera_number, 
+			     const uvc_ros_driver::DistortionModelTypes dtype, 
+			     const double fx,
 			     const double fy, const Eigen::Vector2d &p0,
 			     const float k1, const float k2, const float r1,
 			     const float r2, const Eigen::Matrix3d &H);
@@ -240,6 +244,14 @@ public:
 	void setFlip(bool flip)
 	{
 		flip_ = flip;
+	};
+	bool getPrimaryCamMode()
+	{
+		return primary_camera_mode_;
+	};
+	void setPrimaryCamMode(bool primary_camera_mode)
+	{
+		primary_camera_mode_ = primary_camera_mode;
 	};
 	bool getUseOfDepthMap()
 	{

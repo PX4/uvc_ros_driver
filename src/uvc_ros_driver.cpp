@@ -62,6 +62,8 @@ static bool myPairMax(std::pair<int, int> p, std::pair<int, int> p1)
 
 uvcROSDriver::~uvcROSDriver()
 {
+	//set shutdown flag
+	shutdown_ = true;
 	if(serial_port_open_){
 		setParam("CAMERA_ENABLE", 0.0f);
 	}
@@ -365,21 +367,22 @@ int uvcROSDriver::setParam(const std::string &name, float val)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void uvcROSDriver::sendCameraParam(const int camera_number, const double fx,
+void uvcROSDriver::sendCameraParam(const int camera_number, const uvc_ros_driver::DistortionModelTypes dtype, const double fx,
 				   const double fy, const Eigen::Vector2d &p0,
 				   const float k1, const float k2,
 				   const float r1, const float r2,
 				   const Eigen::Matrix3d &H)
 {
 	std::string camera_name = "CAM" + std::to_string(camera_number);
+	setParam("PARAM_DM_" + camera_name, (int)dtype);
 	setParam("PARAM_CCX_" + camera_name, p0[0]);
 	setParam("PARAM_CCY_" + camera_name, p0[1]);
 	setParam("PARAM_FCX_" + camera_name, fx);
 	setParam("PARAM_FCY_" + camera_name, fy);
 	setParam("PARAM_KC1_" + camera_name, k1);
 	setParam("PARAM_KC2_" + camera_name, k2);
-	setParam("PARAM_P1_" + camera_name, r1);
-	setParam("PARAM_P2_" + camera_name, r2);
+	setParam("PARAM_KC3_" + camera_name, r1);
+	setParam("PARAM_KC4_" + camera_name, r2);
 	setParam("PARAM_H11_" + camera_name, H(0, 0));
 	setParam("PARAM_H12_" + camera_name, H(0, 1));
 	setParam("PARAM_H13_" + camera_name, H(0, 2));
@@ -404,8 +407,12 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 		// cam0->cam1, cam2->cam3
 		for (int cam = 0; cam < n_cameras_; cam++) {
 			uvc_ros_driver::FPGACalibration camera;
-			camera.projection_model_.type_ =
+			camera.projection_model_.projection_type_ =
 				uvc_ros_driver::ProjectionModelTypes::PINHOLE;
+			camera.projection_model_.distortion_type_ = 
+				//uvc_ros_driver::DistortionModelTypes::RADTAN;
+				// TODO use camParams.DistortionModel[cam];
+				static_cast<uvc_ros_driver::DistortionModelTypes>(camParams.DistortionModel[cam]);
 			camera.projection_model_.focal_length_u_ = camParams.FocalLength[cam][0];
 			camera.projection_model_.focal_length_v_ = camParams.FocalLength[cam][1];
 			camera.projection_model_.principal_point_u_ =
@@ -507,7 +514,9 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 
 			// Set all parameters here
 			for (int i = 0; i < n_cameras_; i++) {
-				sendCameraParam(i, f_[i], f_[i], p_[i], cams[i].projection_model_.k1_,
+				sendCameraParam(i, cams[i].projection_model_.distortion_type_, 
+						f_[i], f_[i], p_[i], 
+						cams[i].projection_model_.k1_,
 						cams[i].projection_model_.k2_,
 						cams[i].projection_model_.r1_,
 						cams[i].projection_model_.r2_, H_[i]);
@@ -597,6 +606,7 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 		setParam("CALIB_GAIN", 4300.0f);
 
 		setParam("CAMERA_H_FLIP", float(flip_));
+		setParam("P_MODE", float(primary_camera_mode_));
 
 		if(flip_){
 			setParam("IM_H_FLIP_CAM0", 0.0f);
@@ -786,54 +796,35 @@ inline void uvcROSDriver::selectCameraInfo(int camera,
 void uvcROSDriver::dynamicReconfigureCallback(
     uvc_ros_driver::UvcDriverConfig &config, uint32_t level)
 {
-	setParam("CAMERA_AUTOEXP", static_cast<float>(config.CAMERA_AUTOEXP));
-	setParam("CAMERA_EXP", static_cast<float>(config.CAMERA_EXP));
-	setParam("CAMERA_MIN_E", static_cast<float>(config.CAMERA_MIN_E));
-	setParam("CAMERA_MAX_E", static_cast<float>(config.CAMERA_MAX_E));
-	setParam("CAMERA_AUTOG", static_cast<float>(config.CAMERA_AUTOG));
-	setParam("CAMERA_GAIN", static_cast<float>(config.CAMERA_GAIN));
+	if(!shutdown_){ 
+		setParam("CAMERA_AUTOEXP", static_cast<float>(config.CAMERA_AUTOEXP));
+		setParam("CAMERA_EXP", static_cast<float>(config.CAMERA_EXP));
+		setParam("CAMERA_MIN_E", static_cast<float>(config.CAMERA_MIN_E));
+		setParam("CAMERA_MAX_E", static_cast<float>(config.CAMERA_MAX_E));
+		setParam("CAMERA_AUTOG", static_cast<float>(config.CAMERA_AUTOG));
+		setParam("CAMERA_GAIN", static_cast<float>(config.CAMERA_GAIN));
+		setParam("P_MODE", static_cast<float>(config.PRIMARY_CAM_MODE));
 
-	setParam("IM_H_FLIP_CAM0", static_cast<float>(config.CAMERA_0_HFLIP));
-	setParam("IM_V_FLIP_CAM0", static_cast<float>(config.CAMERA_0_VFLIP));
+		setParam("IM_H_FLIP_CAM0", static_cast<float>(config.CAMERA_0_HFLIP));
+		setParam("IM_V_FLIP_CAM0", static_cast<float>(config.CAMERA_0_VFLIP));
 
-	setParam("ADIS_IMU", static_cast<float>(config.ADIS_IMU));
-	//update camera parameters in FPGA
-	setParam("UPDATEMT9V034", 1.0f);
+		setParam("ADIS_IMU", static_cast<float>(config.ADIS_IMU));
+		//update camera parameters in FPGA
+		setParam("UPDATEMT9V034", 1.0f);
 
-	switch (static_cast<bool>(config.STEREO_EN_CAM1)) {
-		case true:
-			camera_config_ = camera_config_ | 0x20;
-			break;
+		//setParam("CAMERA_ENABLE",float(camera_config_));
 
-		case false:
-		default:
-			camera_config_ = camera_config_ & 0x3DF;
-			break;
-		}
-
-	switch (static_cast<bool>(config.STEREO_EN_CAM3)) {
-		case true:
-			camera_config_ = camera_config_ | 0x40;
-			break;
-
-		case false:
-		default:
-			camera_config_ = camera_config_ & 0x3BF;
-			break;
-		}
-
-	setParam("CAMERA_ENABLE",float(camera_config_));
-
-	setParam("STEREO_RE_CAM1", static_cast<float>(config.STEREO_RE_CAM1));
-	setParam("STEREO_CE_CAM1", static_cast<float>(config.STEREO_CE_CAM1));
-	setParam("STEREO_TH_CAM1", static_cast<float>(config.STEREO_TH_CAM1));
-	setParam("STEREO_LR_CAM1", static_cast<float>(config.STEREO_LR_CAM1));
-	setParam("STEREO_OF_CAM1", static_cast<float>(config.STEREO_OF_CAM1));
-	setParam("STEREO_P1_CAM1", static_cast<float>(config.STEREO_P1_CAM1));
-	setParam("STEREO_P2_CAM1", static_cast<float>(config.STEREO_P2_CAM1));
-	setParam("STEREO_BAYER_D", static_cast<float>(config.STEREO_BAYER_D));
-	//update stereo parameters in FPGA
-	setParam("SETCALIB", 1.0f);
+		setParam("STEREO_RE_CAM1", static_cast<float>(config.STEREO_RE_CAM1));
+		setParam("STEREO_CE_CAM1", static_cast<float>(config.STEREO_CE_CAM1));
+		setParam("STEREO_TH_CAM1", static_cast<float>(config.STEREO_TH_CAM1));
+		setParam("STEREO_LR_CAM1", static_cast<float>(config.STEREO_LR_CAM1));
+		setParam("STEREO_OF_CAM1", static_cast<float>(config.STEREO_OF_CAM1));
+		setParam("STEREO_P1_CAM1", static_cast<float>(config.STEREO_P1_CAM1));
+		setParam("STEREO_P2_CAM1", static_cast<float>(config.STEREO_P2_CAM1));
+		setParam("STEREO_BAYER_D", static_cast<float>(config.STEREO_BAYER_D));
+		//update stereo parameters in FPGA
+		setParam("SETCALIB", 1.0f);
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////

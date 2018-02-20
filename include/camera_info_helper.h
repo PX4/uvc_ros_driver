@@ -27,7 +27,7 @@ inline void setCameraInfoDistortionMdl(
 	std::string model;
 
 	switch (pmt) {
-	case uvc_ros_driver::RADTAN:
+	case uvc_ros_driver::OMNI:
 		model = sensor_msgs::distortion_models::RATIONAL_POLYNOMIAL;
 		break;
 

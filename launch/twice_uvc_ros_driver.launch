@@ -18,7 +18,7 @@
   <arg name="cameraConfigFile" default="/media/camera/calibration.yaml" />
 
   <!-- camera node -->
-  <node pkg="uvc_ros_driver" name="uvc_camera" type="uvc_ros_driver_node" output="screen">
+  <node pkg="uvc_ros_driver" name="uvc_camera_two" type="uvc_ros_driver_node" output="screen">
     <param name="flip" type="bool"  value="$(arg flip)" />
     <param name="numberOfCameras" type="int"  value="$(arg numberOfCameras)" />
     <param name="primaryCamMode" type="bool" value="$(arg primaryCamMode)"/>
@@ -31,4 +31,8 @@
     <rosparam command="load" file="$(find uvc_ros_driver)/params/homography_mapping.yaml" />
   </node>
 
+<remap from="uvc_camera" to="uvc_camera_one"/>
+
 </launch>
+
+

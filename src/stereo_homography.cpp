@@ -83,7 +83,7 @@ StereoHomography::StereoHomography(
 	const uvc_ros_driver::FPGACalibration &calib_cam1)
 	: image_width_(752), image_height_(480)
 {
-	if (calib_cam0.projection_model_.type_ ==
+	if (calib_cam0.projection_model_.projection_type_ ==
 	    uvc_ros_driver::ProjectionModelTypes::PINHOLE) {
 		const uvc_ros_driver::CameraProjectionModel *cam0_projection_model =
 			calib_cam0.getProjectionModel();

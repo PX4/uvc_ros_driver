@@ -32,7 +32,7 @@ inline CameraParameters parseYaml(const YAML::Node &node)
 	std::string omni = "omni";
 
 	std::string radtan = "radtan";
-	std::string equi = "equi";
+	std::string equi = "equidistant";
 
 	std::ostringstream cam_name;
 

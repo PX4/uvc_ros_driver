@@ -6,7 +6,12 @@ namespace uvc_ros_driver
 
 enum ProjectionModelTypes {
 	PINHOLE = 0,
-	RADTAN
+	OMNI
+};
+
+enum DistortionModelTypes {
+	RADTAN = 0,
+	EQUI
 };
 
 class CameraProjectionModel
@@ -15,7 +20,8 @@ class CameraProjectionModel
 public:
 	CameraProjectionModel() {}
 
-	ProjectionModelTypes type_;
+	ProjectionModelTypes projection_type_;
+	DistortionModelTypes distortion_type_;
 
 	float focal_length_u_;
 	float focal_length_v_;
