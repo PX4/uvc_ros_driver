@@ -66,6 +66,8 @@
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/fill_image.h>
 
+#include <image_transport/image_transport.h>
+
 #include <vector>
 #include <utility>  // std::pair
 #include <string>
@@ -76,6 +78,9 @@ namespace uvc
 class uvcROSDriver
 {
 private:
+
+	enum ImuElement { COUNT, TEMP, AX, AY, AZ, RX, RY, RZ };
+
 	bool device_initialized_ = false;
 	bool enable_ait_vio_msg_ = false;
 	bool flip_ = false;
@@ -122,8 +127,11 @@ private:
 	uvc_device_t *dev_;
 	uvc_device_handle_t *devh_;
 	uvc_stream_ctrl_t ctrl_;
+	
 	// ros node handle
 	ros::NodeHandle nh_;
+	image_transport::ImageTransport it_;
+
 	// node name
 	std::string node_name_;
 	// time
@@ -132,71 +140,21 @@ private:
 
 	uint32_t time_wrapper_check_frame_ = 0;
 	uint32_t time_wrapper_check_line_ = 0;
+	
 	// image publishers
-	ros::Publisher cam_0_pub_;
-	ros::Publisher cam_0_info_pub_;
-	ros::Publisher cam_0c_pub_;
-	ros::Publisher cam_0c_info_pub_;
-	ros::Publisher cam_0d_pub_;
-	ros::Publisher cam_0d_info_pub_;
-	ros::Publisher cam_1_pub_;
-	ros::Publisher cam_1_info_pub_;
-	ros::Publisher cam_2_pub_;
-	ros::Publisher cam_2_info_pub_;
-	ros::Publisher cam_2c_pub_;
-	ros::Publisher cam_2c_info_pub_;
-	ros::Publisher cam_2d_pub_;
-	ros::Publisher cam_2d_info_pub_;
-	ros::Publisher cam_3_pub_;
-	ros::Publisher cam_3_info_pub_;
-	ros::Publisher cam_4_pub_;
-	ros::Publisher cam_4_info_pub_;
-	ros::Publisher cam_4c_pub_;
-	ros::Publisher cam_4c_info_pub_;
-	ros::Publisher cam_4d_pub_;
-	ros::Publisher cam_4d_info_pub_;
-	ros::Publisher cam_5_pub_;
-	ros::Publisher cam_5_info_pub_;
-	ros::Publisher cam_6_pub_;
-	ros::Publisher cam_6_info_pub_;
-	ros::Publisher cam_6c_pub_;
-	ros::Publisher cam_6c_info_pub_;
-	ros::Publisher cam_6d_pub_;
-	ros::Publisher cam_6d_info_pub_;
-	ros::Publisher cam_7_pub_;
-	ros::Publisher cam_7_info_pub_;
-	ros::Publisher cam_8_pub_;
-	ros::Publisher cam_8_info_pub_;
-	ros::Publisher cam_8c_pub_;
-	ros::Publisher cam_8c_info_pub_;
-	ros::Publisher cam_8d_pub_;
-	ros::Publisher cam_8d_info_pub_;
-	ros::Publisher cam_9_pub_;
-	ros::Publisher cam_9_info_pub_;
-	// imu publishers
-	ros::Publisher imu0_publisher_;
-	ros::Publisher imu1_publisher_;
-	ros::Publisher imu2_publisher_;
-	ros::Publisher imu3_publisher_;
-	ros::Publisher imu4_publisher_;
-	ros::Publisher imu5_publisher_;
-	ros::Publisher imu6_publisher_;
-	ros::Publisher imu7_publisher_;
-	ros::Publisher imu8_publisher_;
-	ros::Publisher imu9_publisher_;
-	// camera info
-	sensor_msgs::CameraInfo info_cam_0_;
-	sensor_msgs::CameraInfo info_cam_1_;
-	sensor_msgs::CameraInfo info_cam_2_;
-	sensor_msgs::CameraInfo info_cam_3_;
-	sensor_msgs::CameraInfo info_cam_4_;
-	sensor_msgs::CameraInfo info_cam_5_;
-	sensor_msgs::CameraInfo info_cam_6_;
-	sensor_msgs::CameraInfo info_cam_7_;
-	sensor_msgs::CameraInfo info_cam_8_;
-	sensor_msgs::CameraInfo info_cam_9_;
+	std::vector<image_transport::Publisher> cam_raw_pubs_;
+	std::vector<image_transport::Publisher> cam_rect_pubs_;
+	std::vector<image_transport::Publisher> cam_disp_pubs_;
+	std::vector<ros::Publisher> cam_info_pubs_;
 
-	int16_t ShortSwap(int16_t s);
+	std::vector<sensor_msgs::CameraInfo> info_cams_;
+
+	std::vector<ros::Publisher> imu_pubs_;
+
+	uint32_t extractTimestamp(size_t offset, uvc_frame_t *frame);
+
+	double extractImuData(size_t imu_idx, ImuElement element, uvc_frame_t *frame);
+
 	uvc_error_t initAndOpenUvc();
 	int setParam(const std::string &name, float val);
 	void sendCameraParam(const int camera_number, const double fx,
@@ -211,7 +169,7 @@ private:
 
 public:
 	uvcROSDriver(ros::NodeHandle nh)
-		: nh_(nh), node_name_(ros::this_node::getName()) {};
+		: nh_(nh), it_(nh_), node_name_(ros::this_node::getName()) {};
 	~uvcROSDriver();
 	void uvc_cb(uvc_frame_t *frame);
 	/**
