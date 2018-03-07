@@ -629,7 +629,7 @@ bool uvcROSDriver::extractAndTranslateTimestamp(size_t offset,
   const uint8_t *raw_timestamp = &static_cast<uint8_t *>(
       frame
           ->data)[kImagesPerFrame * (offset + frame->width - kTimestampOffset)];
-  uint64_t fpga_timestamp = (raw_timestamp[3] << 0) | (raw_timestamp[2] << 8) |
+  uint32_t fpga_timestamp = (raw_timestamp[3] << 0) | (raw_timestamp[2] << 8) |
                             (raw_timestamp[1] << 16) | (raw_timestamp[0] << 24);
 
   if (fpga_timestamp == 0) {
@@ -637,10 +637,10 @@ bool uvcROSDriver::extractAndTranslateTimestamp(size_t offset,
   }
 
   constexpr uint64_t kMicroSecondsToNanoSeconds = 1e3;
-  fpga_timestamp *= kMicroSecondsToNanoSeconds;
+  const uint64_t fpga_timestamp_64 = static_cast<uint64_t>(fpga_timestamp) * kMicroSecondsToNanoSeconds;
   // only update on image timestamps
   if (offset == 0) {
-    device_time_translator_->update(fpga_timestamp, ros::Time::now());
+    device_time_translator_->update(fpga_timestamp_64, ros::Time::now());
   }
 
   ROS_ERROR_STREAM("Time: " << fpga_timestamp);
