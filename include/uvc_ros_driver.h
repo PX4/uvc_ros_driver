@@ -76,10 +76,10 @@
 namespace uvc {
 
 struct CamID {
-    size_t left_cam_num;
-    size_t right_cam_num;
-    bool is_raw_images;
-  };
+  size_t left_cam_num;
+  size_t right_cam_num;
+  bool is_raw_images;
+};
 
 class uvcROSDriver {
  private:
@@ -154,13 +154,17 @@ class uvcROSDriver {
   std::vector<ros::Publisher> imu_pubs_;
 
   // time translation
-  std::unique_ptr<cuckoo_time_translator::UnwrappedDeviceTimeTranslator> device_time_translator_;
+  std::unique_ptr<cuckoo_time_translator::UnwrappedDeviceTimeTranslator>
+      device_time_translator_;
 
-  ros::Time extractAndTranslateTimestamp(size_t offset, uvc_frame_t *frame);
+  bool extractAndTranslateTimestamp(size_t offset, uvc_frame_t *frame,
+                                    ros::Time *stamp);
   CamID extractCamId(uvc_frame_t *frame);
-  sensor_msgs::Imu extractImuData(uvc_frame_t *frame);
+  uint8_t extractImuId(uvc_frame_t *frame);
+  uint8_t extractImuCount(size_t offset, uvc_frame_t *frame);
+  bool extractImuData(size_t offset, uvc_frame_t *frame, sensor_msgs::Imu *msg);
   double extractImuElementData(size_t imu_idx, ImuElement element,
-                                           uvc_frame_t *frame);
+                               uvc_frame_t *frame);
   void extractImages(uvc_frame_t *frame,
                      ait_ros_messages::VioSensorMsg *msg_vio);
 
@@ -175,7 +179,6 @@ class uvcROSDriver {
   inline void selectCameraInfo(int camera, sensor_msgs::CameraInfo **ci);
 
  public:
-
   uvcROSDriver(ros::NodeHandle nh)
       : nh_(nh), it_(nh_), node_name_(ros::this_node::getName()){};
   ~uvcROSDriver();
