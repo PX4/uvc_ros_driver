@@ -57,8 +57,6 @@
 #include "libuvc/libuvc.h"
 #include "uvc_ros_driver/UvcDriverConfig.h"
 
-#include <ait_ros_messages/VioSensorMsg.h>
-
 #include <dynamic_reconfigure/server.h>
 #include <ros/ros.h>
 #include <ros/package.h>
@@ -79,10 +77,8 @@ class uvcROSDriver
 {
 private:
 	bool device_initialized_ = false;
-	bool enable_ait_vio_msg_ = false;
-	bool flip_ = false;
 	bool primary_camera_mode_ = false;
-	bool depth_map_ = false;
+	bool adis_enabled_ = false;
 	bool set_calibration_ = false;
 	bool uvc_cb_flag_ = false;
 	bool first_imu_received_flag_ = false;
@@ -100,17 +96,20 @@ private:
 	bool shutdown_ = 0;
 
 	ros::Duration imu_dt_ = ros::Duration(0.0);
-  ros::Time timestamp_prev_imu_msg_;
+  	ros::Time timestamp_prev_imu_msg_;
 
 	// TODO: add other camera parameters
 	// float ....
 
-	// const double acc_scale_factor = 16384.0;
-	// const double gyr_scale_factor = 131.0;
+	double acc_scale_factor = 0.0;
+	double gyr_scale_factor = 0.0;
+
+	const double acc_scale_factor_mpu = 16384.0;
+	const double gyr_scale_factor_mpu = 131.0;
 
 	// Scaling factors for ADIS.
-	const double acc_scale_factor = 4000.0;
-	const double gyr_scale_factor = 100.0;
+	const double acc_scale_factor_adis = 4000.0;
+	const double gyr_scale_factor_adis = 100.0;
 	const double deg2rad = 2 * M_PI / 360.0;
 	const double k_ms_to_sec = 1000000.0;
 
@@ -182,6 +181,14 @@ private:
 	// imu publishers
 	ros::Publisher imu0_publisher_;
 	ros::Publisher imu1_publisher_;
+	ros::Publisher imu2_publisher_;
+	ros::Publisher imu3_publisher_;
+	ros::Publisher imu4_publisher_;
+	ros::Publisher imu5_publisher_;
+	ros::Publisher imu6_publisher_;
+	ros::Publisher imu7_publisher_;
+	ros::Publisher imu8_publisher_;
+	ros::Publisher imu9_publisher_;
 	// camera info
 	sensor_msgs::CameraInfo info_cam_0_;
 	sensor_msgs::CameraInfo info_cam_1_;
@@ -229,22 +236,6 @@ public:
 	 */
 	void startDevice();
 	// getter and setter for different internal variables
-	bool getUseOfAITMsgs()
-	{
-		return enable_ait_vio_msg_;
-	};
-	void setUseOFAITMsgs(bool enable)
-	{
-		enable_ait_vio_msg_ = enable;
-	};
-	bool getFlip()
-	{
-		return flip_;
-	};
-	void setFlip(bool flip)
-	{
-		flip_ = flip;
-	};
 	bool getPrimaryCamMode()
 	{
 		return primary_camera_mode_;
@@ -252,14 +243,6 @@ public:
 	void setPrimaryCamMode(bool primary_camera_mode)
 	{
 		primary_camera_mode_ = primary_camera_mode;
-	};
-	bool getUseOfDepthMap()
-	{
-		return depth_map_;
-	};
-	void setUseOfDepthMap(bool depth_map)
-	{
-		depth_map_ = depth_map;
 	};
 	bool getCalibrationParam()
 	{

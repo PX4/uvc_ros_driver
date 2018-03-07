@@ -27,9 +27,9 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   sensor_msgs
   std_msgs
-  ait_ros_messages
   image_transport
   dynamic_reconfigure
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
