@@ -157,8 +157,8 @@ class uvcROSDriver {
   std::unique_ptr<cuckoo_time_translator::UnwrappedDeviceTimeTranslator>
       device_time_translator_;
 
-  bool extractAndTranslateTimestamp(size_t offset, uvc_frame_t *frame,
-                                    ros::Time *stamp);
+  bool extractAndTranslateTimestamp(size_t offset, bool update_translator,
+                                    uvc_frame_t *frame, ros::Time *stamp);
   CamID extractCamId(uvc_frame_t *frame);
   uint8_t extractImuId(uvc_frame_t *frame);
   uint8_t extractImuCount(size_t offset, uvc_frame_t *frame);

@@ -621,29 +621,32 @@ inline void uvcROSDriver::selectCameraInfo(int camera,
 }
 
 bool uvcROSDriver::extractAndTranslateTimestamp(size_t offset,
+                                                bool update_translator,
                                                 uvc_frame_t *frame,
                                                 ros::Time *stamp) {
   // read out micro second timestamp
   constexpr size_t kTimestampOffset = 10;
   constexpr size_t kImagesPerFrame = 2;
-  const uint8_t *raw_timestamp = &static_cast<uint8_t *>(
-      frame
-          ->data)[kImagesPerFrame * (offset + frame->width - kTimestampOffset)];
-  uint32_t fpga_timestamp = (raw_timestamp[3] << 0) | (raw_timestamp[2] << 8) |
-                            (raw_timestamp[1] << 16) | (raw_timestamp[0] << 24);
+  const uint8_t *raw_timestamp = &(static_cast<uint8_t *>(
+      frame->data)[kImagesPerFrame *
+                   (offset * frame->width - kTimestampOffset)]);
+
+  const uint32_t fpga_timestamp =
+      (raw_timestamp[3] << 0) | (raw_timestamp[2] << 8) |
+      (raw_timestamp[1] << 16) | (raw_timestamp[0] << 24);
 
   if (fpga_timestamp == 0) {
     return false;
   }
 
   constexpr uint64_t kMicroSecondsToNanoSeconds = 1e3;
-  const uint64_t fpga_timestamp_64 = static_cast<uint64_t>(fpga_timestamp) * kMicroSecondsToNanoSeconds;
+  const uint64_t fpga_timestamp_64 =
+      static_cast<uint64_t>(fpga_timestamp) * kMicroSecondsToNanoSeconds;
+
   // only update on image timestamps
-  if (offset == 0) {
+  if (update_translator) {
     device_time_translator_->update(fpga_timestamp_64, ros::Time::now());
   }
-
-  ROS_ERROR_STREAM("Time: " << fpga_timestamp);
 
   if (device_time_translator_->isReadyToTranslate()) {
     *stamp = device_time_translator_->translate(fpga_timestamp);
@@ -698,7 +701,7 @@ uint8_t uvcROSDriver::extractImuCount(size_t offset, uvc_frame_t *frame) {
 
 bool uvcROSDriver::extractImuData(size_t offset, uvc_frame_t *frame,
                                   sensor_msgs::Imu *msg) {
-  if (!extractAndTranslateTimestamp(offset, frame, &msg->header.stamp)) {
+  if (!extractAndTranslateTimestamp(offset, false, frame, &msg->header.stamp)) {
     return false;
   }
 
@@ -788,14 +791,12 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame) {
 
   static uint8_t prev_count = 0;
 
-  ROS_WARN("\n NEW FRAME \n");
-
   // process the IMU data
   for (size_t i = 1; i < frame->height; ++i) {
     sensor_msgs::Imu msg_imu;
 
     const uint8_t count = extractImuCount(i, frame);
-    ROS_ERROR_STREAM("Count: " << (size_t)count);
+
     if ((count != prev_count) && extractImuData(i, frame, &msg_imu)) {
       const sensor_msgs::Imu base_msg_imu = msg_imu;
       if (flip_) {
@@ -842,7 +843,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame) {
 
   if ((cam_id.left_cam_num == frame_counter_cam) &&
       (cam_id.is_raw_images == raw_enabled)) {
-    if (!extractAndTranslateTimestamp(0, frame, &frame_time_)) {
+    if (!extractAndTranslateTimestamp(1, true, frame, &frame_time_)) {
       ROS_ERROR("Invalid timestamp, dropping frame");
     }
     frameCounter_++;
