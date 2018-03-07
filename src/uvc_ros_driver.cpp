@@ -80,7 +80,10 @@ uvcROSDriver::~uvcROSDriver() {
             setParam("CAMERA_ENABLE", 0.0f);
           }
           // std::cout << "received id " << param.param_id << " value " <<
-          // param.param_value <<" iteration " 				<< (float) count <<
+          // param.param_value <<" iteration " 				<<
+          // (float)
+          // count
+          // <<
           // std::endl;
           count++;
         }
@@ -155,6 +158,15 @@ void uvcROSDriver::initDevice() {
   }
 
   info_cams_.resize(n_cameras_);
+
+  // time translator
+  constexpr int kSecondsToNanoSeconds = 1e9;
+  device_time_translator_.reset(
+      new cuckoo_time_translator::UnwrappedDeviceTimeTranslator(
+          cuckoo_time_translator::ClockParameters(kSecondsToNanoSeconds),
+          nh_.getNamespace(),
+          cuckoo_time_translator::Defaults().setFilterAlgorithm(
+              cuckoo_time_translator::FilterAlgorithm::ConvexHull)));
 
   // wait on heart beat
   std::cout << "Waiting on device.";
@@ -608,66 +620,119 @@ inline void uvcROSDriver::selectCameraInfo(int camera,
   *ci = &info_cams_[camera];
 }
 
-////////////////////////////////////////////////////////////////////////////////
+ros::Time uvcROSDriver::extractAndTranslateTimestamp(size_t offset, uvc_frame_t *frame) {
+  // read out micro second timestamp
+  constexpr size_t kTimestampOffset = 10;
+  constexpr size_t kImagesPerFrame = 2;
+  const uint8_t *raw_timestamp = &static_cast<uint8_t *>(
+      frame
+          ->data)[kImagesPerFrame * (offset + frame->width - kTimestampOffset)];
+  uint64_t fpga_timestamp = (raw_timestamp[3] << 0) | (raw_timestamp[2] << 8) |
+                            (raw_timestamp[1] << 16) | (raw_timestamp[0] << 24);
 
-inline void uvcROSDriver::deinterleave(const uint8_t *mixed, uint8_t *array1,
-                                       uint8_t *array2, size_t mixedLength,
-                                       size_t imageWidth, size_t imageHeight) {
-  int i = 0;
-  int c = 0;
-#if defined __ARM_NEON__
-  size_t vectors = mixedLength / 32;
-  size_t divider = (imageWidth + 16) * 2 / 32;
-
-  while (vectors-- > 0) {
-    const uint8x16_t src0 = vld1q_u8(mixed);
-    const uint8x16_t src1 = vld1q_u8(mixed + 16);
-    const uint8x16x2_t dst = vuzpq_u8(src0, src1);
-
-    if (vectors % divider != 0) {
-      vst1q_u8(array1, dst.val[0]);
-      vst1q_u8(array2, dst.val[1]);
-      array1 += 16;
-      array2 += 16;
-      c += 16;
-    }
-
-    i += 16;
-    mixed += 32;
+  constexpr uint64_t kMicroSecondsToNanoSeconds = 1e3;
+  fpga_timestamp *= kMicroSecondsToNanoSeconds;
+  // only update on image timestamps
+  if (offset == 0) {
+    device_time_translator_->update(fpga_timestamp, ros::Time::now());
   }
-#else
-  while (c < imageWidth * imageHeight) {
-    array1[c] = mixed[2 * i];
-    array2[c] = mixed[2 * i + 1];
-    i++;
-    c++;
 
-    if ((c % imageWidth) == 0) {
-      i += 16;
-    }
+  if (device_time_translator_->isReadyToTranslate()) {
+    return device_time_translator_->translate(fpga_timestamp);
+  } else {
+    ROS_WARN("device_time_translator is not ready yet, using ros::Time::now()");
+    return ros::Time::now();
   }
-#endif
 }
 
-uint32_t uvcROSDriver::extractTimestamp(size_t offset, uvc_frame_t *frame){
-	  // read out micro second timestamp of 1st line
-  const uint8_t *raw_timestamp =
-      &static_cast<uint8_t *>(frame->data)[2 * (offset + frame->width - 10)];
-  return (raw_timestamp[3] << 0) | (raw_timestamp[2] << 8) |
-                             (raw_timestamp[1] << 16) |
-                             (raw_timestamp[0] << 24);
+CamID uvcROSDriver::extractCamId(uvc_frame_t *frame) {
+  constexpr uint8_t kMaxCams = 10;
+  constexpr size_t kCamIDOffset = 8;
+  constexpr size_t kCamIDShift = 4;
+  constexpr size_t kImagesPerFrame = 2;
+  constexpr size_t kRectOffset = 8;
+  uint8_t raw_id =
+      static_cast<int8_t *>(
+          frame->data)[kImagesPerFrame * (frame->width - kCamIDOffset)] >>
+      kCamIDShift;
+
+  CamID cam_id;
+  if (raw_id < kMaxCams) {
+    cam_id.left_cam_num = kImagesPerFrame * raw_id;
+    cam_id.right_cam_num = cam_id.left_cam_num + 1;
+    cam_id.is_raw_images = true;
+  } else {
+    cam_id.left_cam_num = kImagesPerFrame * (raw_id - kRectOffset);
+    cam_id.right_cam_num = cam_id.left_cam_num;
+    cam_id.is_raw_images = false;
+  }
+
+  return cam_id;
 }
 
-double uvcROSDriver::extractImuData(size_t imu_idx, ImuElement element, uvc_frame_t *frame){
-	const int8_t * raw_data = &static_cast<int8_t*>(
-                       frame->data)[2*((imu_idx + 1) * frame->width - 8 + element)];
-    double data = static_cast<double>((raw_data[1] << 0) | (raw_data[0] << 8));
-    if(element == ImuElement::AX || element == ImuElement::AY || element == ImuElement::AZ){
-    	data /= (acc_scale_factor / 9.81);
-    }else if(element == ImuElement::RX || element == ImuElement::RY || element == ImuElement::RZ){
-    	data /= (gyr_scale_factor / deg2rad);
-    }
-    return data;                    
+sensor_msgs::Imu uvcROSDriver::extractImuData(uvc_frame_t *frame) {
+  // first get the imu index
+  constexpr size_t kImuIdxOffset = 8;
+  constexpr uint8_t kImuIdxMask = 0x0F;
+  constexpr size_t kImagesPerFrame = 2;
+  uint8_t idx =
+      static_cast<int8_t *>(
+          frame->data)[kImagesPerFrame * (frame->width - kImuIdxOffset)] &
+      kImuIdxMask;
+
+  // now get the data
+  sensor_msgs::Imu msg;
+  msg.header.stamp = extractAndTranslateTimestamp(idx + 1, frame);
+  msg.linear_acceleration.x = extractImuElementData(idx, ImuElement::AX, frame);
+  msg.linear_acceleration.y = extractImuElementData(idx, ImuElement::AY, frame);
+  msg.linear_acceleration.z = extractImuElementData(idx, ImuElement::AZ, frame);
+
+  msg.angular_velocity.x = extractImuElementData(idx, ImuElement::RX, frame);
+  msg.angular_velocity.y = extractImuElementData(idx, ImuElement::RY, frame);
+  msg.angular_velocity.z = extractImuElementData(idx, ImuElement::RZ, frame);
+}
+
+double uvcROSDriver::extractImuElementData(size_t imu_idx, ImuElement element,
+                                           uvc_frame_t *frame) {
+  const int8_t *raw_data = &static_cast<int8_t *>(
+      frame->data)[2 * ((imu_idx + 1) * frame->width - 8 + element)];
+  double data = static_cast<double>((raw_data[1] << 0) | (raw_data[0] << 8));
+  if (element == ImuElement::AX || element == ImuElement::AY ||
+      element == ImuElement::AZ) {
+    data /= (acc_scale_factor / 9.81);
+  } else if (element == ImuElement::RX || element == ImuElement::RY ||
+             element == ImuElement::RZ) {
+    data /= (gyr_scale_factor / deg2rad);
+  }
+  return data;
+}
+
+void uvcROSDriver::extractImages(uvc_frame_t *frame,
+                                 ait_ros_messages::VioSensorMsg *msg_vio) {
+  // read the image data and separate the 2 images
+  const size_t mixed_size = 2 * (frame->height * frame->width);
+  const std::valarray<uint8_t> data(static_cast<uint8_t *>(frame->data),
+                                    mixed_size);
+  const std::valarray<uint8_t> left_val =
+      data[std::slice(0, mixed_size / 2, 2)];
+  const std::valarray<uint8_t> right_val =
+      data[std::slice(1, mixed_size / 2, 2)];
+  std::vector<uint8_t> left(std::begin(left_val), std::end(left_val));
+  std::vector<uint8_t> right(std::begin(right_val), std::end(right_val));
+
+  sensor_msgs::fillImage(msg_vio->left_image,
+                         sensor_msgs::image_encodings::MONO8,  //
+                         frame->height,                        // height
+                         frame->width - 16,                    // width
+                         frame->width,                         // stepSize
+                         left.data());
+
+  sensor_msgs::fillImage(msg_vio->right_image,
+                         sensor_msgs::image_encodings::MONO8,  // BAYER_RGGB8,//
+                         frame->height,                        // height
+                         frame->width - 16,                    // width
+                         frame->width,                         // stepSize
+                         right.data());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -694,48 +759,21 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame) {
   unsigned frame_size = frame->height * frame->width * 2;
 
   // read the IMU data
-  uint16_t cam_id = 0;
   uint16_t imu_id = 0;
   static uint16_t count_prev = 0;
 
-  uint32_t timestamp = extractTimestamp(0, frame);
-
-  // Static vars are initialized only in the first run. Calculate time offset
-  // between current time (ros::Time::now())
-  // of host and substract current timestamp of device, as this timestamp
-  // depends on the powered on time of the device
-  static ros::Duration time_offset_frame(0.041);
-  static ros::Time fpga_frame_time =
-      ros::Time::now() - time_offset_frame -
-      ros::Duration(
-          double(timestamp / k_ms_to_sec));  // subtract first timestamp
-  static ros::Time fpga_line_time =
-      ros::Time::now() - ros::Duration(double(timestamp / k_ms_to_sec));
-  ros::Duration fpga_time_add(0.0);
-
-  // wrap around is automatically handled by underflow of uint16_t values
-  fpga_time_add = ros::Duration(
-      (double(timestamp - time_wrapper_check_frame_)) / k_ms_to_sec);
-  time_wrapper_check_frame_ = timestamp;
-
-  // frame time is timestamp of 1st line + offset_start - offset_frame from
-  // exposure to readout of 1st line
-  fpga_frame_time = fpga_frame_time + fpga_time_add;
-
-  unsigned int imu_msg_counter_in_frame = 0;
-  ros::Time timestamp_second_imu_msg_in_frame;
-
-  for (unsigned i = 0; i < frame->height; i++) {
-    uint16_t count = static_cast<uint16_t>(extractImuData(i, ImuElement::COUNT, frame));
-
+  for (unsigned i = 0; i < 1; i++) {
+    // uint16_t count =
+    //    static_cast<uint16_t>(extractImuData(i, ImuElement::COUNT, frame));
+    // uint16_t count = 0;
     // detect cam_id in first row
 
     // bit 15-12 cam_id, 11-8 imu_id, 7-0 counter
 
-    if (i == 0) {
-      cam_id = (count & 0xF000) >> 12;
-    }
-
+    // if (i == 0) {
+    //  cam_id = (count & 0xF000) >> 12;
+    // }
+    /*
     imu_id = (count & 0x0F00) >> 8;
 
     count = count & 0x00FF;
@@ -750,7 +788,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame) {
     double gyr_y = extractImuData(i, ImuElement::RY, frame);
     double gyr_z = extractImuData(i, ImuElement::RZ, frame);
 
-    timestamp = extractTimestamp(i+1, frame);
+    timestamp = extractTimestamp(i + 1, frame);
 
     // wrap around is automatically handled by underflow of uint16_t values
     fpga_time_add = ros::Duration(double(timestamp - time_wrapper_check_line_) /
@@ -829,61 +867,27 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame) {
       ++imu_msg_counter_in_frame;
 
       count_prev = count;
-    }
+    }*/
   }
 
-  if (imu_msg_counter_in_frame > 3) {
-    const ros::Duration diff_timestamps_imu =
-        timestamp_prev_imu_msg_ - timestamp_second_imu_msg_in_frame;
-    imu_dt_.fromSec(diff_timestamps_imu.toSec() /
-                    (imu_msg_counter_in_frame - 2));
-  }
-  // std::cout << "total: " << imu_dt_ << " n: " << imu_msg_counter_in_frame <<
-  // std::endl;
-
-  ros::Duration elapsed = fpga_frame_time - past_;
-  past_ = fpga_frame_time;
-
-  ROS_DEBUG("camera id: %d   ", cam_id);
-  ROS_DEBUG("Current time: %f", ros::Time::now().toSec());
-  ROS_DEBUG("Message Timestamp: %f   ", fpga_frame_time.toSec());
-  ROS_DEBUG("Device Timestamp: %f   ", double(timestamp / k_ms_to_sec));
-  ROS_DEBUG("framerate: %f   ", 1.0 / elapsed.toSec());
   ROS_DEBUG("%lu imu messages", msg_vio.imu.size());
   ROS_DEBUG("imu id: %d ", imu_id);
 
-  // temp container for the 2 images
-  uint8_t left[(frame_size - 16 * 2 * frame->height) / 2];
-  uint8_t right[(frame_size - 16 * 2 * frame->height) / 2];
-  // read the image data and separate the 2 images
-  deinterleave(static_cast<unsigned char *>(frame->data), left, right,
-               (size_t)frame_size, frame->width - 16, frame->height);
+  extractImages(frame, &msg_vio);
 
-  sensor_msgs::fillImage(msg_vio.left_image,
-                         sensor_msgs::image_encodings::BAYER_RGGB8,  //
-                         frame->height,                              // height
-                         frame->width - 16,                          // width
-                         frame->width - 16,                          // stepSize
-                         left);
+  const CamID cam_id = extractCamId(frame);
 
-  // msg_vio.left_image.header.stamp = fpga_frame_time;
+  if (cam_id.right_cam_num > n_cameras_) {
+    return;
+  }
 
-  sensor_msgs::fillImage(msg_vio.right_image,
-                         sensor_msgs::image_encodings::MONO8,  // BAYER_RGGB8,//
-                         frame->height,                        // height
-                         frame->width - 16,                    // width
-                         frame->width - 16,                    // stepSize
-                         right);
-
-  // msg_vio.right_image.header.stamp = fpga_frame_time;
-
-  const bool raw_disabled = (camera_config_ & 0x001) == 0;
+  const bool raw_enabled = (camera_config_ & 0x001) != 0;
   const uint16_t frame_counter_cam = n_cameras_ < 9 ? 0 : 8;
-  const uint16_t frame_counter_id =
-      frame_counter_cam / 2 + 4 * (2 + raw_disabled);
 
-  if (cam_id == frame_counter_id) {
-    frame_time_ = fpga_frame_time;
+
+  if ((cam_id.left_cam_num == frame_counter_cam) &&
+      (cam_id.is_raw_images == raw_enabled)) {
+    frame_time_ = extractAndTranslateTimestamp(0, frame);
     frameCounter_++;
   }
 
@@ -891,44 +895,28 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame) {
   msg_vio.left_image.header.stamp = frame_time_;
   msg_vio.right_image.header.stamp = frame_time_;
 
-  if (cam_id < (n_cameras_ / 2)) {
-    const size_t left_cam_num = 2 * cam_id;
-    const size_t right_cam_num = left_cam_num + 1;
-
+  if (cam_id.is_raw_images) {
     msg_vio.left_image.header.frame_id =
-        "cam_" + std::to_string(left_cam_num) + "_optical_frame";
+        "cam_" + std::to_string(cam_id.left_cam_num) + "_optical_frame";
     msg_vio.right_image.header.frame_id =
-        "cam_" + std::to_string(right_cam_num) + "_optical_frame";
+        "cam_" + std::to_string(cam_id.right_cam_num) + "_optical_frame";
 
-    if ((cam_id != 0) && (frameCounter_ % modulo_ != 0)) {
-      ROS_DEBUG("Frame Time: %f \n", frame_time_.toSec());
-
-      msg_vio.left_image.data.clear();
-      msg_vio.right_image.data.clear();
-      msg_vio.imu.clear();
+    if ((cam_id.left_cam_num != 0) && (frameCounter_ % modulo_ != 0)) {
       return;
     }
 
-    cam_raw_pubs_[left_cam_num].publish(msg_vio.left_image);
-    cam_raw_pubs_[right_cam_num].publish(msg_vio.right_image);
+    cam_raw_pubs_[cam_id.left_cam_num].publish(msg_vio.left_image);
+    cam_raw_pubs_[cam_id.right_cam_num].publish(msg_vio.right_image);
   } else {
-    const size_t cam_num = 2 * (cam_id - 8);
-
     msg_vio.left_image.header.frame_id =
-        "cam_" + std::to_string(cam_num) + "_corrected_frame";
+        "cam_" + std::to_string(cam_id.left_cam_num) + "_corrected_frame";
     msg_vio.right_image.header.frame_id =
-        "cam_" + std::to_string(cam_num) + "_disparity_frame";
+        "cam_" + std::to_string(cam_id.right_cam_num) + "_disparity_frame";
 
     // publish images
-    cam_rect_pubs_[cam_num].publish(msg_vio.left_image);
-    cam_disp_pubs_[cam_num].publish(msg_vio.right_image);
+    cam_rect_pubs_[cam_id.left_cam_num].publish(msg_vio.left_image);
+    cam_disp_pubs_[cam_id.right_cam_num].publish(msg_vio.right_image);
   }
-
-  ROS_DEBUG("Frame Time: %f \n", frame_time_.toSec());
-
-  msg_vio.left_image.data.clear();
-  msg_vio.right_image.data.clear();
-  msg_vio.imu.clear();
 }
 
 } /* uvc */
