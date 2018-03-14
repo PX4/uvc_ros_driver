@@ -78,8 +78,8 @@ class uvcROSDriver
 private:
 	bool device_initialized_ = false;
 	bool primary_camera_mode_ = false;
+	bool camera_tile_ = false;
 	bool adis_enabled_ = false;
-	bool set_calibration_ = false;
 	bool uvc_cb_flag_ = false;
 	bool first_imu_received_flag_ = false;
 	bool serial_port_open_ = false;
@@ -244,14 +244,15 @@ public:
 	{
 		primary_camera_mode_ = primary_camera_mode;
 	};
-	bool getCalibrationParam()
+	bool getCameraTile()
 	{
-		return set_calibration_;
+		return camera_tile_;
 	};
-	void setCalibrationParam(bool calibration)
+	void setCameraTile(bool camera_tile)
 	{
-		set_calibration_ = calibration;
+		camera_tile_ = camera_tile;	
 	};
+
 	int getNumberOfCameras()
 	{
 		return n_cameras_;

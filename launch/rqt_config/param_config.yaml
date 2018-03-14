@@ -1,32 +1,33 @@
 !!python/object/new:dynamic_reconfigure.encoding.Config
 dictitems:
   ADIS_IMU: false
-  CAMERA_0_HFLIP: true
-  CAMERA_0_VFLIP: true
-  CAMERA_1_HFLIP: false
-  CAMERA_1_VFLIP: false
-  CAMERA_2_HFLIP: true
-  CAMERA_2_VFLIP: true
-  CAMERA_3_HFLIP: false
-  CAMERA_3_VFLIP: false
-  CAMERA_4_HFLIP: true
-  CAMERA_4_VFLIP: true
-  CAMERA_5_HFLIP: false
-  CAMERA_5_VFLIP: false
-  CAMERA_6_HFLIP: true
-  CAMERA_6_VFLIP: true
-  CAMERA_7_HFLIP: false
-  CAMERA_7_VFLIP: false
-  CAMERA_8_HFLIP: true
-  CAMERA_8_VFLIP: true
-  CAMERA_9_HFLIP: false
-  CAMERA_9_VFLIP: false
+  CAMERA_0_HFLIP: false
+  CAMERA_0_VFLIP: false
+  CAMERA_1_HFLIP: true
+  CAMERA_1_VFLIP: true
+  CAMERA_2_HFLIP: false
+  CAMERA_2_VFLIP: false
+  CAMERA_3_HFLIP: true
+  CAMERA_3_VFLIP: true
+  CAMERA_4_HFLIP: false
+  CAMERA_4_VFLIP: false
+  CAMERA_5_HFLIP: true
+  CAMERA_5_VFLIP: true
+  CAMERA_6_HFLIP: false
+  CAMERA_6_VFLIP: false
+  CAMERA_7_HFLIP: true
+  CAMERA_7_VFLIP: true
+  CAMERA_8_HFLIP: false
+  CAMERA_8_VFLIP: false
+  CAMERA_9_HFLIP: true
+  CAMERA_9_VFLIP: true
   CAMERA_AUTOEXP: true
   CAMERA_AUTOG: true
   CAMERA_EXP: 40
   CAMERA_GAIN: 16
   CAMERA_MAX_E: 378
   CAMERA_MIN_E: 0
+  CAMERA_TILE: true
   PRIMARY_CAM_MODE: false
   STEREO_BAYER_D: false
   STEREO_CE_CAM1: false
@@ -34,6 +35,11 @@ dictitems:
   STEREO_CE_CAM5: false
   STEREO_CE_CAM7: false
   STEREO_CE_CAM9: false
+  STEREO_FP_CAM1: false
+  STEREO_FP_CAM3: false
+  STEREO_FP_CAM5: false
+  STEREO_FP_CAM7: false
+  STEREO_FP_CAM9: false
   STEREO_LR_CAM1: 3
   STEREO_LR_CAM3: 3
   STEREO_LR_CAM5: 3
@@ -67,32 +73,33 @@ dictitems:
   groups: !!python/object/new:dynamic_reconfigure.encoding.Config
     dictitems:
       ADIS_IMU: false
-      CAMERA_0_HFLIP: true
-      CAMERA_0_VFLIP: true
-      CAMERA_1_HFLIP: false
-      CAMERA_1_VFLIP: false
-      CAMERA_2_HFLIP: true
-      CAMERA_2_VFLIP: true
-      CAMERA_3_HFLIP: false
-      CAMERA_3_VFLIP: false
-      CAMERA_4_HFLIP: true
-      CAMERA_4_VFLIP: true
-      CAMERA_5_HFLIP: false
-      CAMERA_5_VFLIP: false
-      CAMERA_6_HFLIP: true
-      CAMERA_6_VFLIP: true
-      CAMERA_7_HFLIP: false
-      CAMERA_7_VFLIP: false
-      CAMERA_8_HFLIP: true
-      CAMERA_8_VFLIP: true
-      CAMERA_9_HFLIP: false
-      CAMERA_9_VFLIP: false
+      CAMERA_0_HFLIP: false
+      CAMERA_0_VFLIP: false
+      CAMERA_1_HFLIP: true
+      CAMERA_1_VFLIP: true
+      CAMERA_2_HFLIP: false
+      CAMERA_2_VFLIP: false
+      CAMERA_3_HFLIP: true
+      CAMERA_3_VFLIP: true
+      CAMERA_4_HFLIP: false
+      CAMERA_4_VFLIP: false
+      CAMERA_5_HFLIP: true
+      CAMERA_5_VFLIP: true
+      CAMERA_6_HFLIP: false
+      CAMERA_6_VFLIP: false
+      CAMERA_7_HFLIP: true
+      CAMERA_7_VFLIP: true
+      CAMERA_8_HFLIP: false
+      CAMERA_8_VFLIP: false
+      CAMERA_9_HFLIP: true
+      CAMERA_9_VFLIP: true
       CAMERA_AUTOEXP: true
       CAMERA_AUTOG: true
       CAMERA_EXP: 40
       CAMERA_GAIN: 16
       CAMERA_MAX_E: 378
       CAMERA_MIN_E: 0
+      CAMERA_TILE: true
       PRIMARY_CAM_MODE: false
       STEREO_BAYER_D: false
       STEREO_CE_CAM1: false
@@ -100,6 +107,11 @@ dictitems:
       STEREO_CE_CAM5: false
       STEREO_CE_CAM7: false
       STEREO_CE_CAM9: false
+      STEREO_FP_CAM1: false
+      STEREO_FP_CAM3: false
+      STEREO_FP_CAM5: false
+      STEREO_FP_CAM7: false
+      STEREO_FP_CAM9: false
       STEREO_LR_CAM1: 3
       STEREO_LR_CAM3: 3
       STEREO_LR_CAM5: 3

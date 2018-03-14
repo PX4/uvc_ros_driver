@@ -490,81 +490,64 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 		size_t homography_size;
 
 		// TODO: reimplment this part for multiple stereo base line based systems
-		if (set_calibration_) {
-			std::vector<std::pair<int, int> >::iterator it_homography =
-				std::max_element(homography_mapping_.begin(), homography_mapping_.end(),
-						 myPairMax);
-			/*if ((*it_homography).second > n_cameras_) {
-				homography_size = std::distance(homography_mapping_.begin(), it_homography);
-
-			} else {
-				homography_size = homography_mapping_.size();
-			}*/
-			//set homography number to number of camera pairs for now
-			homography_size = n_cameras_/2;
-
-			for (size_t i = 0; i < homography_size; i++) {
-				// temp structures
-				Eigen::Matrix3d H0;
-				Eigen::Matrix3d H1;
-				double f_new;
-				Eigen::Vector2d p0_new, p1_new;
-
-				std::pair<int, int> indx = homography_mapping_[i];
-
-				StereoHomography h(cams[indx.first], cams[indx.second]);
-				h.getHomography(H0, H1, f_new, p0_new, p1_new);
-
-				f_[indx.first] = f_new;
-				f_[indx.second] = f_new;
-				p_[indx.first] = p0_new;
-				p_[indx.second] = p1_new;
-				// TODO check if matrix is copied or only pointer!!
-				H_[indx.first] = H0;
-				H_[indx.second] = H1;
-			}
-
-			// Set all parameters here
-			for (int i = 0; i < n_cameras_; i++) {
-				sendCameraParam(i, cams[i].projection_model_.distortion_type_, 
-						f_[i], f_[i], p_[i], 
-						cams[i].projection_model_.k1_,
-						cams[i].projection_model_.k2_,
-						cams[i].projection_model_.r1_,
-						cams[i].projection_model_.r2_, H_[i]);
-				selectCameraInfo(i, &ci);
-				setCameraInfoIntrinsics(*ci, f_[i], f_[i], p_[i](0), p_[i](1));
-				setCameraInfoDistortionMdl(
-					*ci, uvc_ros_driver::ProjectionModelTypes::PINHOLE);
-				setCameraInfoDistortionParams(*ci, 0, 0, 0, 0, 0);
-			}
+		std::vector<std::pair<int, int> >::iterator it_homography =
+			std::max_element(homography_mapping_.begin(), homography_mapping_.end(),
+					 myPairMax);
+		/*if ((*it_homography).second > n_cameras_) {
+			homography_size = std::distance(homography_mapping_.begin(), it_homography);
 
 		} else {
-			for (int i = 0; i < n_cameras_; i++) {
-				selectCameraInfo(i, &ci);
-				setCameraInfoIntrinsics(
-					*ci, camParams.FocalLength[i][0], camParams.FocalLength[i][1],
-					camParams.PrincipalPoint[i][0], camParams.PrincipalPoint[i][1]);
-				setCameraInfoDistortionMdl(
-					*ci, uvc_ros_driver::ProjectionModelTypes::PINHOLE);
-				setCameraInfoDistortionParams(
-					*ci, cams[i].projection_model_.k1_, cams[i].projection_model_.k2_,
-					cams[i].projection_model_.r1_, cams[i].projection_model_.r2_, 0);
-			}
+			homography_size = homography_mapping_.size();
+		}*/
+		//set homography number to number of camera pairs for now
+		homography_size = n_cameras_/2;
+
+		for (size_t i = 0; i < homography_size; i++) {
+			// temp structures
+			Eigen::Matrix3d H0;
+			Eigen::Matrix3d H1;
+			double f_new;
+			Eigen::Vector2d p0_new, p1_new;
+
+			std::pair<int, int> indx = homography_mapping_[i];
+
+			StereoHomography h(cams[indx.first], cams[indx.second]);
+			h.getHomography(H0, H1, f_new, p0_new, p1_new);
+
+			f_[indx.first] = f_new;
+			f_[indx.second] = f_new;
+			p_[indx.first] = p0_new;
+			p_[indx.second] = p1_new;
+			// TODO check if matrix is copied or only pointer!!
+			H_[indx.first] = H0;
+			H_[indx.second] = H1;
+		}
+
+		// Set all parameters here
+		for (int i = 0; i < n_cameras_; i++) {
+			sendCameraParam(i, cams[i].projection_model_.distortion_type_, 
+					f_[i], f_[i], p_[i], 
+					cams[i].projection_model_.k1_,
+					cams[i].projection_model_.k2_,
+					cams[i].projection_model_.r1_,
+					cams[i].projection_model_.r2_, H_[i]);
+			selectCameraInfo(i, &ci);
+			setCameraInfoIntrinsics(*ci, f_[i], f_[i], p_[i](0), p_[i](1));
+			setCameraInfoDistortionMdl(
+				*ci, uvc_ros_driver::ProjectionModelTypes::PINHOLE);
+			setCameraInfoDistortionParams(*ci, 0, 0, 0, 0, 0);
 		}
 
 
 
-		setParam("CAMERA_TILE", 1.0f);
-		//setParam("COST_SHIFT", 2.0f);
-		setParam("STEREO_MP_01", 0.0f);
+		setParam("CAMERA_TILE", (float)camera_tile_);
 		setParam("IMU_ENABLE", (float)n_cameras_);
 		setParam("CALIB_GAIN", 4300.0f);
 
 	}
 
 
-	setParam("SETCALIB", float(set_calibration_));
+	setParam("SETCALIB", 1.0f);
 
 	// std::cout << "Configuring cameras..." << std::endl;
 	setParam("RESETMT9V034", 1.0f);
@@ -700,6 +683,7 @@ void uvcROSDriver::dynamicReconfigureCallback(
 		setParam("CAMERA_AUTOG", static_cast<float>(config.CAMERA_AUTOG));
 		setParam("CAMERA_GAIN", static_cast<float>(config.CAMERA_GAIN));
 		setParam("P_MODE", static_cast<float>(config.PRIMARY_CAM_MODE));
+		setParam("CAMERA_TILE", static_cast<float>(config.CAMERA_TILE));
 		setParam("STEREO_BAYER_D", static_cast<float>(config.STEREO_BAYER_D));
 		setParam("ADIS_IMU", static_cast<float>(config.ADIS_IMU));
 		adis_enabled_ = config.ADIS_IMU;

@@ -27,6 +27,7 @@ dictitems:
   CAMERA_GAIN: 16
   CAMERA_MAX_E: 378
   CAMERA_MIN_E: 0
+  CAMERA_TILE: true
   PRIMARY_CAM_MODE: false
   STEREO_BAYER_D: false
   STEREO_CE_CAM1: false
@@ -34,6 +35,11 @@ dictitems:
   STEREO_CE_CAM5: false
   STEREO_CE_CAM7: false
   STEREO_CE_CAM9: false
+  STEREO_FP_CAM1: false
+  STEREO_FP_CAM3: false
+  STEREO_FP_CAM5: false
+  STEREO_FP_CAM7: false
+  STEREO_FP_CAM9: false
   STEREO_LR_CAM1: 3
   STEREO_LR_CAM3: 3
   STEREO_LR_CAM5: 3
@@ -83,16 +89,17 @@ dictitems:
       CAMERA_6_VFLIP: true
       CAMERA_7_HFLIP: true
       CAMERA_7_VFLIP: false
-      CAMERA_8_HFLIP: true
-      CAMERA_8_VFLIP: true
-      CAMERA_9_HFLIP: false
-      CAMERA_9_VFLIP: false
+      CAMERA_8_HFLIP: false
+      CAMERA_8_VFLIP: false
+      CAMERA_9_HFLIP: true
+      CAMERA_9_VFLIP: true
       CAMERA_AUTOEXP: true
       CAMERA_AUTOG: true
       CAMERA_EXP: 40
       CAMERA_GAIN: 16
       CAMERA_MAX_E: 378
       CAMERA_MIN_E: 0
+      CAMERA_TILE: true
       PRIMARY_CAM_MODE: false
       STEREO_BAYER_D: false
       STEREO_CE_CAM1: false
@@ -100,6 +107,11 @@ dictitems:
       STEREO_CE_CAM5: false
       STEREO_CE_CAM7: false
       STEREO_CE_CAM9: false
+      STEREO_FP_CAM1: false
+      STEREO_FP_CAM3: false
+      STEREO_FP_CAM5: false
+      STEREO_FP_CAM7: false
+      STEREO_FP_CAM9: false
       STEREO_LR_CAM1: 3
       STEREO_LR_CAM3: 3
       STEREO_LR_CAM5: 3
