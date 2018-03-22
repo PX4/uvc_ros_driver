@@ -77,8 +77,6 @@ class uvcROSDriver
 {
 private:
 	bool device_initialized_ = false;
-	bool primary_camera_mode_ = false;
-	bool camera_tile_ = false;
 	bool adis_enabled_ = false;
 	bool uvc_cb_flag_ = false;
 	bool first_imu_received_flag_ = false;
@@ -236,22 +234,6 @@ public:
 	 */
 	void startDevice();
 	// getter and setter for different internal variables
-	bool getPrimaryCamMode()
-	{
-		return primary_camera_mode_;
-	};
-	void setPrimaryCamMode(bool primary_camera_mode)
-	{
-		primary_camera_mode_ = primary_camera_mode;
-	};
-	bool getCameraTile()
-	{
-		return camera_tile_;
-	};
-	void setCameraTile(bool camera_tile)
-	{
-		camera_tile_ = camera_tile;	
-	};
 
 	int getNumberOfCameras()
 	{
@@ -267,24 +249,24 @@ public:
 			camera_config_ = 0x3FF;
 			break;
 		case 8:
-			camera_config_ = 0x00F;
-			// camera_config_ = 0x1EF;
+			//camera_config_ = 0x00F;
+			camera_config_ = 0x1EF;
 			break;
 
 		case 6:
+			//camera_config_ = 0x007
 			camera_config_ = 0xE7;
 			break;
 
 		case 4:
-
-
+			//camera_config_ = 0x003
 			camera_config_ = 0x63;
 			break;
 
 		case 2:
 		default:
-			// camera_config_ = 0x01;
-			camera_config_ = 0x21;
+			// camera_config_ = 0x01; //right output cam_right_raw
+			camera_config_ = 0x21; //right output cam_left_rect
 			break;
 		}
 	};
@@ -292,10 +274,7 @@ public:
 	{
 		return camera_config_;
 	};
-	//	void setCameraConfig(int camera_config)
-	//	{
-	//		camera_config_ = camera_config;
-	//	};
+
 	CameraParameters getCameraParams()
 	{
 		return camera_params_;

@@ -539,8 +539,6 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 		}
 
 
-
-		setParam("CAMERA_TILE", (float)camera_tile_);
 		setParam("IMU_ENABLE", (float)n_cameras_);
 		setParam("CALIB_GAIN", 4300.0f);
 
