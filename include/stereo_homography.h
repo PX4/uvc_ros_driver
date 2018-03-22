@@ -18,6 +18,8 @@ public:
 			   Eigen::Vector2d &p1_new);
 
 private:
+	bool equi_model0_;
+	bool equi_model1_;
 	double r0_[9];
 	double t0_[3];
 	double f0_[2];
