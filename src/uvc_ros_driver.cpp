@@ -590,7 +590,6 @@ uvc_error_t uvcROSDriver::initAndOpenUvc()
 		return res;
 	}
 
-	// ?????????
 	// uvc_device_descriptor_t *desc;
 	// uvc_get_device_descriptor(dev_, &desc);
 	// uvc_free_device_descriptor(desc);
