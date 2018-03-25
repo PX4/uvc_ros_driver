@@ -27,7 +27,14 @@ inline void setCameraInfoDistortionMdl(
 	std::string model;
 
 	switch (pmt) {
-	case uvc_ros_driver::OMNI:
+	case uvc_ros_driver::RADTAN:
+		model = "RADTAN";
+		break;
+	case uvc_ros_driver::EQUI:
+	default:
+		model = "EQUIDISTANT";	
+	}	
+/*	case uvc_ros_driver::OMNI:
 		model = sensor_msgs::distortion_models::RATIONAL_POLYNOMIAL;
 		break;
 
@@ -35,7 +42,7 @@ inline void setCameraInfoDistortionMdl(
 	default:
 		model = sensor_msgs::distortion_models::PLUMB_BOB;
 	}
-
+*/
 	ci.distortion_model = model;
 }
 
