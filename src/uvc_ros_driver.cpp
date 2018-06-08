@@ -379,14 +379,14 @@ int uvcROSDriver::setParam(const std::string &name, float val)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void uvcROSDriver::sendCameraParam(const int camera_number, const uvc_ros_driver::DistortionModelTypes dtype, const double fx,
+void uvcROSDriver::sendCameraParam(const int camera_number, const uvc_ros_driver::DistortionModelTypes dmt, const double fx,
 				   const double fy, const Eigen::Vector2d &p0,
 				   const float k1, const float k2,
 				   const float r1, const float r2,
 				   const Eigen::Matrix3d &H)
 {
 	std::string camera_name = "CAM" + std::to_string(camera_number);
-	setParam("PARAM_DM_" + camera_name, (int)dtype);
+	setParam("PARAM_DM_" + camera_name, (int)dmt);
 	setParam("PARAM_CCX_" + camera_name, p0[0]);
 	setParam("PARAM_CCY_" + camera_name, p0[1]);
 	setParam("PARAM_FCX_" + camera_name, fx);
@@ -534,7 +534,7 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 			selectCameraInfo(i, &ci);
 			setCameraInfoIntrinsics(*ci, f_[i], f_[i], p_[i](0), p_[i](1));
 			setCameraInfoDistortionMdl(
-				*ci, uvc_ros_driver::ProjectionModelTypes::PINHOLE);
+				*ci, cams[i].projection_model_.distortion_type_);
 			setCameraInfoDistortionParams(*ci, 0, 0, 0, 0, 0);
 		}
 
@@ -674,11 +674,9 @@ void uvcROSDriver::dynamicReconfigureCallback(
 {
 	if(!shutdown_){ 
 		setParam("CAMERA_AUTOEXP", static_cast<float>(config.CAMERA_AUTOEXP));
-		setParam("CAMERA_EXP", static_cast<float>(config.CAMERA_EXP));
 		setParam("CAMERA_MIN_E", static_cast<float>(config.CAMERA_MIN_E));
 		setParam("CAMERA_MAX_E", static_cast<float>(config.CAMERA_MAX_E));
 		setParam("CAMERA_AUTOG", static_cast<float>(config.CAMERA_AUTOG));
-		setParam("CAMERA_GAIN", static_cast<float>(config.CAMERA_GAIN));
 		setParam("P_MODE", static_cast<float>(config.PRIMARY_CAM_MODE));
 		setParam("CAMERA_TILE", static_cast<float>(config.CAMERA_TILE));
 		setParam("STEREO_BAYER_D", static_cast<float>(config.STEREO_BAYER_D));
@@ -706,10 +704,33 @@ void uvcROSDriver::dynamicReconfigureCallback(
 		setParam("IM_H_FLIP_CAM9", static_cast<float>(config.CAMERA_9_HFLIP));
 		setParam("IM_V_FLIP_CAM9", static_cast<float>(config.CAMERA_9_VFLIP));
 		//update camera parameters in FPGA
-		setParam("UPDATEMT9V034", 1.0f);
-
+		
 		//setParam("CAMERA_ENABLE",float(camera_config_));
 
+		setParam("CAMERA_EXP_CAM0", static_cast<float>(config.CAMERA_EXP_CAM0));
+		setParam("CAMERA_EXP_CAM1", static_cast<float>(config.CAMERA_EXP_CAM1));
+		setParam("CAMERA_EXP_CAM2", static_cast<float>(config.CAMERA_EXP_CAM2));
+		setParam("CAMERA_EXP_CAM3", static_cast<float>(config.CAMERA_EXP_CAM3));
+		setParam("CAMERA_EXP_CAM4", static_cast<float>(config.CAMERA_EXP_CAM4));
+		setParam("CAMERA_EXP_CAM5", static_cast<float>(config.CAMERA_EXP_CAM5));
+		setParam("CAMERA_EXP_CAM6", static_cast<float>(config.CAMERA_EXP_CAM6));
+		setParam("CAMERA_EXP_CAM7", static_cast<float>(config.CAMERA_EXP_CAM7));
+		setParam("CAMERA_EXP_CAM8", static_cast<float>(config.CAMERA_EXP_CAM8));
+		setParam("CAMERA_EXP_CAM9", static_cast<float>(config.CAMERA_EXP_CAM9));
+
+		setParam("CAMERA_GAIN_CAM0", static_cast<float>(config.CAMERA_GAIN_CAM0));
+		setParam("CAMERA_GAIN_CAM1", static_cast<float>(config.CAMERA_GAIN_CAM1));
+		setParam("CAMERA_GAIN_CAM2", static_cast<float>(config.CAMERA_GAIN_CAM2));
+		setParam("CAMERA_GAIN_CAM3", static_cast<float>(config.CAMERA_GAIN_CAM3));
+		setParam("CAMERA_GAIN_CAM4", static_cast<float>(config.CAMERA_GAIN_CAM4));
+		setParam("CAMERA_GAIN_CAM5", static_cast<float>(config.CAMERA_GAIN_CAM5));
+		setParam("CAMERA_GAIN_CAM6", static_cast<float>(config.CAMERA_GAIN_CAM6));
+		setParam("CAMERA_GAIN_CAM7", static_cast<float>(config.CAMERA_GAIN_CAM7));
+		setParam("CAMERA_GAIN_CAM8", static_cast<float>(config.CAMERA_GAIN_CAM8));
+		setParam("CAMERA_GAIN_CAM9", static_cast<float>(config.CAMERA_GAIN_CAM9));
+
+		setParam("UPDATEMT9V034", 1.0f);
+		
 		setParam("STEREO_FP_CAM1", static_cast<float>(config.STEREO_FP_CAM1));
 		setParam("STEREO_RE_CAM1", static_cast<float>(config.STEREO_RE_CAM1));
 		setParam("STEREO_CE_CAM1", static_cast<float>(config.STEREO_CE_CAM1));
@@ -1068,7 +1089,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 		     (size_t)frame_size, frame->width - 16, frame->height);
 
 	sensor_msgs::fillImage(msg_left_image,
-			       sensor_msgs::image_encodings::MONO8,//BAYER_RGGB8,//
+			       sensor_msgs::image_encodings::BAYER_RGGB8,//
 			       frame->height,      // height
 			       frame->width - 16,  // width
 			       frame->width - 16,  // stepSize

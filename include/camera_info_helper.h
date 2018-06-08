@@ -22,27 +22,25 @@ inline void setCameraInfoIntrinsics(sensor_msgs::CameraInfo &ci, double fx,
 }
 
 inline void setCameraInfoDistortionMdl(
-	sensor_msgs::CameraInfo &ci, uvc_ros_driver::ProjectionModelTypes pmt)
+	sensor_msgs::CameraInfo &ci, uvc_ros_driver::DistortionModelTypes dmt)
 {
 	std::string model;
 
-	switch (pmt) {
-	case uvc_ros_driver::RADTAN:
+/*	if ((int)dmt == 0){
+		model = "RADTAN";
+	}else{
+		model = "EQUIDISTANT";	
+	}
+*/
+	switch (dmt) {
+	case uvc_ros_driver::RADTAN :
 		model = "RADTAN";
 		break;
-	case uvc_ros_driver::EQUI:
+	case uvc_ros_driver::EQUI :
 	default:
 		model = "EQUIDISTANT";	
 	}	
-/*	case uvc_ros_driver::OMNI:
-		model = sensor_msgs::distortion_models::RATIONAL_POLYNOMIAL;
-		break;
 
-	case uvc_ros_driver::PINHOLE:
-	default:
-		model = sensor_msgs::distortion_models::PLUMB_BOB;
-	}
-*/
 	ci.distortion_model = model;
 }
 
