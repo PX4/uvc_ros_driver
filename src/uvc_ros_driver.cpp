@@ -718,16 +718,16 @@ void uvcROSDriver::dynamicReconfigureCallback(
 		setParam("CAMERA_EXP_CAM8", static_cast<float>(config.CAMERA_EXP_CAM8));
 		setParam("CAMERA_EXP_CAM9", static_cast<float>(config.CAMERA_EXP_CAM9));
 
-		setParam("CAMERA_GAIN_CAM0", static_cast<float>(config.CAMERA_GAIN_CAM0));
-		setParam("CAMERA_GAIN_CAM1", static_cast<float>(config.CAMERA_GAIN_CAM1));
-		setParam("CAMERA_GAIN_CAM2", static_cast<float>(config.CAMERA_GAIN_CAM2));
-		setParam("CAMERA_GAIN_CAM3", static_cast<float>(config.CAMERA_GAIN_CAM3));
-		setParam("CAMERA_GAIN_CAM4", static_cast<float>(config.CAMERA_GAIN_CAM4));
-		setParam("CAMERA_GAIN_CAM5", static_cast<float>(config.CAMERA_GAIN_CAM5));
-		setParam("CAMERA_GAIN_CAM6", static_cast<float>(config.CAMERA_GAIN_CAM6));
-		setParam("CAMERA_GAIN_CAM7", static_cast<float>(config.CAMERA_GAIN_CAM7));
-		setParam("CAMERA_GAIN_CAM8", static_cast<float>(config.CAMERA_GAIN_CAM8));
-		setParam("CAMERA_GAIN_CAM9", static_cast<float>(config.CAMERA_GAIN_CAM9));
+		setParam("CAMERA_G_CAM0", static_cast<float>(config.CAMERA_G_CAM0));
+		setParam("CAMERA_G_CAM1", static_cast<float>(config.CAMERA_G_CAM1));
+		setParam("CAMERA_G_CAM2", static_cast<float>(config.CAMERA_G_CAM2));
+		setParam("CAMERA_G_CAM3", static_cast<float>(config.CAMERA_G_CAM3));
+		setParam("CAMERA_G_CAM4", static_cast<float>(config.CAMERA_G_CAM4));
+		setParam("CAMERA_G_CAM5", static_cast<float>(config.CAMERA_G_CAM5));
+		setParam("CAMERA_G_CAM6", static_cast<float>(config.CAMERA_G_CAM6));
+		setParam("CAMERA_G_CAM7", static_cast<float>(config.CAMERA_G_CAM7));
+		setParam("CAMERA_G_CAM8", static_cast<float>(config.CAMERA_G_CAM8));
+		setParam("CAMERA_G_CAM9", static_cast<float>(config.CAMERA_G_CAM9));
 
 		setParam("UPDATEMT9V034", 1.0f);
 		
