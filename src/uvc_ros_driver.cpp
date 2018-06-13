@@ -146,12 +146,8 @@ void uvcROSDriver::initDevice()
 					  node_name_ + "/cam_9/camera_info", 5);
 		cam_8c_pub_ = nh_.advertise<sensor_msgs::Image>(
 				     node_name_ + "/cam_8/image_rect", 5);
-		cam_8c_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
-					  node_name_ + "/cam_8/camera_info", 5);
 		cam_8d_pub_ = nh_.advertise<sensor_msgs::Image>(
 				     node_name_ + "/cam_8/image_depth", 5);
-		cam_8d_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
-					  node_name_ + "/cam_8/camera_info", 5);
 		// initialize imu msg publisher
 		imu8_publisher_ = nh_.advertise<sensor_msgs::Imu>("cam_8/imu", 20);
 		imu9_publisher_ = nh_.advertise<sensor_msgs::Imu>("cam_9/imu", 20);
@@ -169,12 +165,8 @@ void uvcROSDriver::initDevice()
 					  node_name_ + "/cam_7/camera_info", 5);
 		cam_6c_pub_ = nh_.advertise<sensor_msgs::Image>(
 				     node_name_ + "/cam_6/image_rect", 5);
-		cam_6c_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
-					  node_name_ + "/cam_6/camera_info", 5);
 		cam_6d_pub_ = nh_.advertise<sensor_msgs::Image>(
 				     node_name_ + "/cam_6/image_depth", 5);
-		cam_6d_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
-					  node_name_ + "/cam_6/camera_info", 5);
 		// initialize imu msg publisher
 		imu6_publisher_ = nh_.advertise<sensor_msgs::Imu>("cam_6/imu", 20);
 		imu7_publisher_ = nh_.advertise<sensor_msgs::Imu>("cam_7/imu", 20);
@@ -192,12 +184,8 @@ void uvcROSDriver::initDevice()
 					  node_name_ + "/cam_5/camera_info", 5);
 		cam_4c_pub_ = nh_.advertise<sensor_msgs::Image>(
 				     node_name_ + "/cam_4/image_rect", 5);
-		cam_4c_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
-					  node_name_ + "/cam_4/camera_info", 5);
 		cam_4d_pub_ = nh_.advertise<sensor_msgs::Image>(
 				     node_name_ + "/cam_4/image_depth", 5);
-		cam_4d_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
-					  node_name_ + "/cam_4/camera_info", 5);
 		// initialize imu msg publisher
 		imu4_publisher_ = nh_.advertise<sensor_msgs::Imu>("cam_4/imu", 20);
 		imu5_publisher_ = nh_.advertise<sensor_msgs::Imu>("cam_5/imu", 20);
@@ -215,12 +203,8 @@ void uvcROSDriver::initDevice()
 					  node_name_ + "/cam_3/camera_info", 5);
 		cam_2c_pub_ = nh_.advertise<sensor_msgs::Image>(
 				     node_name_ + "/cam_2/image_rect", 5);
-		cam_2c_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
-					  node_name_ + "/cam_2/camera_info", 5);
 		cam_2d_pub_ = nh_.advertise<sensor_msgs::Image>(
 				     node_name_ + "/cam_2/image_depth", 5);
-		cam_2d_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
-					  node_name_ + "/cam_2/camera_info", 5);
 		// initialize imu msg publisher
 		imu2_publisher_ = nh_.advertise<sensor_msgs::Imu>("cam_2/imu", 20);
 		imu3_publisher_ = nh_.advertise<sensor_msgs::Imu>("cam_3/imu", 20);
@@ -238,12 +222,8 @@ void uvcROSDriver::initDevice()
 					  node_name_ + "/cam_1/camera_info", 5);
 		cam_0c_pub_ = nh_.advertise<sensor_msgs::Image>(
 				     node_name_ + "/cam_0/image_rect", 5);
-		cam_0c_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
-					  node_name_ + "/cam_0/camera_info", 5);
 		cam_0d_pub_ = nh_.advertise<sensor_msgs::Image>(
 				     node_name_ + "/cam_0/image_depth", 5);
-		cam_0d_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
-					  node_name_ + "/cam_0/camera_info", 5);
 		// initialize imu msg publisher
 		imu0_publisher_ = nh_.advertise<sensor_msgs::Imu>("cam_0/imu", 20);
 		imu1_publisher_ = nh_.advertise<sensor_msgs::Imu>("cam_1/imu", 20);
@@ -485,6 +465,7 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 		f_.resize(n_cameras_);
 		p_.resize(n_cameras_);
 		H_.resize(n_cameras_);
+		R_.resize(n_cameras_);
 		// pointer at camera info
 		sensor_msgs::CameraInfo *ci;
 		size_t homography_size;
@@ -506,13 +487,15 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 			// temp structures
 			Eigen::Matrix3d H0;
 			Eigen::Matrix3d H1;
+			Eigen::Matrix3d R0;
+			Eigen::Matrix3d R1;
 			double f_new;
 			Eigen::Vector2d p0_new, p1_new;
 
 			std::pair<int, int> indx = homography_mapping_[i];
 
 			StereoHomography h(cams[indx.first], cams[indx.second]);
-			h.getHomography(H0, H1, f_new, p0_new, p1_new);
+			h.getHomography(H0, H1, R0, R1, f_new, p0_new, p1_new);
 
 			f_[indx.first] = f_new;
 			f_[indx.second] = f_new;
@@ -521,6 +504,8 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 			// TODO check if matrix is copied or only pointer!!
 			H_[indx.first] = H0;
 			H_[indx.second] = H1;
+			R_[indx.first] = R0;
+			R_[indx.second] = R1;
 		}
 
 		// Set all parameters here
@@ -532,10 +517,18 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 					cams[i].projection_model_.r1_,
 					cams[i].projection_model_.r2_, H_[i]);
 			selectCameraInfo(i, &ci);
-			setCameraInfoIntrinsics(*ci, f_[i], f_[i], p_[i](0), p_[i](1));
-			setCameraInfoDistortionMdl(
-				*ci, cams[i].projection_model_.distortion_type_);
-			setCameraInfoDistortionParams(*ci, 0, 0, 0, 0, 0);
+			//original camera parameters with old intrinsics
+			setCameraInfoIntrinsics(*ci, cams[i].projection_model_.focal_length_u_, cams[i].projection_model_.focal_length_v_, 
+						cams[i].projection_model_.principal_point_u_, cams[i].projection_model_.principal_point_v_);
+			// set camera info rotation
+			setCameraInfoRotation(*ci, R_[i]);
+			// updated camera parameters with new intrinsics
+			setCameraInfoProjection(*ci, f_[i], f_[i], p_[i](0), p_[i](1),(-f_[i]*cams[i].projection_model_.t_[0]),0.0);
+			// set camera info distortion model
+			setCameraInfoDistortionMdl(*ci, cams[i].projection_model_.distortion_type_);
+			// set camera info distortion parameters
+			setCameraInfoDistortionParams(*ci, cams[i].projection_model_.k1_, cams[i].projection_model_.k2_, 
+						      cams[i].projection_model_.r1_, cams[i].projection_model_.r2_, 0);
 		}
 
 
@@ -1089,7 +1082,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 		     (size_t)frame_size, frame->width - 16, frame->height);
 
 	sensor_msgs::fillImage(msg_left_image,
-			       sensor_msgs::image_encodings::BAYER_RGGB8,//
+			       sensor_msgs::image_encodings::BAYER_RGGB8,//MONO8,//
 			       frame->height,      // height
 			       frame->width - 16,  // width
 			       frame->width - 16,  // stepSize
@@ -1124,7 +1117,7 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 			setCameraInfoHeader(info_cam_0_, width_, height_, frame_time_,
 					    "cam_0_optical_frame");
 			setCameraInfoHeader(info_cam_1_, width_, height_, frame_time_,
-					    "cam_1_optical_frame");
+					    "cam_0_optical_frame");
 			// publish camera info
 			cam_0_info_pub_.publish(info_cam_0_);
 			cam_1_info_pub_.publish(info_cam_1_);
@@ -1149,15 +1142,6 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 		// publish images
 		cam_0c_pub_.publish(msg_left_image);
 		cam_0d_pub_.publish(msg_right_image);
-
-		// set camera info header
-		setCameraInfoHeader(info_cam_0_, width_, height_, frame_time_,
-				    "cam_0_corrected_frame");
-		setCameraInfoHeader(info_cam_1_, width_, height_, frame_time_,
-				    "cam_0_disparity_frame");
-		// publish camera info
-		cam_0c_info_pub_.publish(info_cam_0_);
-		cam_0d_info_pub_.publish(info_cam_1_);
 	}
 
 	if (cam_id == 1 && frameCounter_ % modulo_ == 0) {  // select_cam = 2 + 3
@@ -1173,11 +1157,11 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 		cam_2_pub_.publish(msg_left_image);
 		cam_3_pub_.publish(msg_right_image);
 
-		// set camera info header
+		// set camera info header, stereo cameras have the save frame_id
 		setCameraInfoHeader(info_cam_2_, width_, height_, frame_time_,
 				    "cam_2_optical_frame");
 		setCameraInfoHeader(info_cam_3_, width_, height_, frame_time_,
-				    "cam_3_optical_frame");
+				    "cam_2_optical_frame");
 		// publish camera info
 		cam_2_info_pub_.publish(info_cam_2_);
 		cam_3_info_pub_.publish(info_cam_3_);
@@ -1195,15 +1179,6 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 		// publish images
 		cam_2c_pub_.publish(msg_left_image);
 		cam_2d_pub_.publish(msg_right_image);
-
-		// set camera info header
-		setCameraInfoHeader(info_cam_2_, width_, height_, frame_time_,
-				    "cam_2_corrected_frame");
-		setCameraInfoHeader(info_cam_3_, width_, height_, frame_time_,
-				    "cam_2_disparity_frame");
-		// publish camera info
-		cam_2c_info_pub_.publish(info_cam_2_);
-		cam_2d_info_pub_.publish(info_cam_3_);
 	}
 
 	if (cam_id == 2 && frameCounter_ % modulo_ == 0) {  // select_cam = 4 + 5
@@ -1217,11 +1192,11 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 		cam_4_pub_.publish(msg_left_image);
 		cam_5_pub_.publish(msg_right_image);
 
-		// set camera info header
+		// set camera info header, stereo cameras have the save frame_id
 		setCameraInfoHeader(info_cam_4_, width_, height_, frame_time_,
 				    "cam_4_optical_frame");
 		setCameraInfoHeader(info_cam_5_, width_, height_, frame_time_,
-				    "cam_5_optical_frame");
+				    "cam_4_optical_frame");
 		// publish camera info
 		cam_4_info_pub_.publish(info_cam_4_);
 		cam_5_info_pub_.publish(info_cam_5_);
@@ -1239,15 +1214,6 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 		// publish images
 		cam_4c_pub_.publish(msg_left_image);
 		cam_4d_pub_.publish(msg_right_image);
-
-		// set camera info header
-		setCameraInfoHeader(info_cam_4_, width_, height_, frame_time_,
-				    "cam_4_corrected_frame");
-		setCameraInfoHeader(info_cam_5_, width_, height_, frame_time_,
-				    "cam_4_disparity_frame");
-		// publish camera info
-		cam_4c_info_pub_.publish(info_cam_4_);
-		cam_4d_info_pub_.publish(info_cam_5_);
 	}
 
 	if (cam_id == 3 && frameCounter_ % modulo_ == 0) {  // select_cam = 6 + 7
@@ -1261,11 +1227,11 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 		cam_6_pub_.publish(msg_left_image);
 		cam_7_pub_.publish(msg_right_image);
 
-		// set camera info header
+		// set camera info header, stereo cameras have the save frame_id
 		setCameraInfoHeader(info_cam_6_, width_, height_, frame_time_,
 				    "cam_6_optical_frame");
 		setCameraInfoHeader(info_cam_7_, width_, height_, frame_time_,
-				    "cam_7_optical_frame");
+				    "cam_6_optical_frame");
 		// publish camera info
 		cam_6_info_pub_.publish(info_cam_6_);
 		cam_7_info_pub_.publish(info_cam_7_);
@@ -1283,15 +1249,6 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 		// publish images
 		cam_6c_pub_.publish(msg_left_image);
 		cam_6d_pub_.publish(msg_right_image);
-
-		// set camera info header
-		setCameraInfoHeader(info_cam_6_, width_, height_, frame_time_,
-				    "cam_6_corrected_frame");
-		setCameraInfoHeader(info_cam_7_, width_, height_, frame_time_,
-				    "cam_6_disparity_frame");
-		// publish camera info
-		cam_6c_info_pub_.publish(info_cam_6_);
-		cam_6d_info_pub_.publish(info_cam_7_);
 	}
 
 	if (cam_id == 4 && frameCounter_ % modulo_ == 0) {  // select_cam = 8 + 9
@@ -1310,11 +1267,11 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 		cam_8_pub_.publish(msg_left_image);
 		cam_9_pub_.publish(msg_right_image);
 
-		// set camera info header
+		// set camera info header, stereo cameras have the save frame_id
 		setCameraInfoHeader(info_cam_8_, width_, height_, frame_time_,
 				    "cam_8_optical_frame");
 		setCameraInfoHeader(info_cam_9_, width_, height_, frame_time_,
-				    "cam_9_optical_frame");
+				    "cam_8_optical_frame");
 		// publish camera info
 		cam_8_info_pub_.publish(info_cam_8_);
 		cam_9_info_pub_.publish(info_cam_9_);
@@ -1338,14 +1295,6 @@ void uvcROSDriver::uvc_cb(uvc_frame_t *frame)
 		cam_8c_pub_.publish(msg_left_image);
 		cam_8d_pub_.publish(msg_right_image);
 
-		// set camera info header
-		setCameraInfoHeader(info_cam_8_, width_, height_, frame_time_,
-				    "cam_8_corrected_frame");
-		setCameraInfoHeader(info_cam_9_, width_, height_, frame_time_,
-				    "cam_8_disparity_frame");
-		// publish camera info
-		cam_8c_info_pub_.publish(info_cam_8_);
-		cam_8d_info_pub_.publish(info_cam_9_);
 	}
 
 	ROS_DEBUG("Frame Time: %f \n", frame_time_.toSec());

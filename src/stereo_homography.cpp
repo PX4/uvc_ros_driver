@@ -127,6 +127,7 @@ StereoHomography::StereoHomography(
 
 // Computes homography for stereo rectification
 void StereoHomography::getHomography(Eigen::Matrix3d &H0, Eigen::Matrix3d &H1,
+				     Eigen::Matrix3d &R0t,Eigen::Matrix3d &R1t,
 				     double &f_new, Eigen::Vector2d &p0_new,
 				     Eigen::Vector2d &p1_new)
 {
@@ -323,6 +324,9 @@ void StereoHomography::getHomography(Eigen::Matrix3d &H0, Eigen::Matrix3d &H1,
 	// Compute homography
 	H0 = C0 * R_0.transpose() * C0_new.inverse();
 	H1 = C1 * R_1.transpose() * C1_new.inverse();
+
+	R0t = R0;
+	R1t = R1;
 
 	f_new = f0_new;
 }
