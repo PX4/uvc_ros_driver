@@ -4,11 +4,11 @@
   <node pkg="uvc_ros_driver" name="uvc_camera" type="uvc_ros_driver_node" output="screen">
     <param name="numberOfCameras" type="int"  value="10" />
     <param name="calibrationMode" type="bool"  value="0" />
-    <param name="cameraConfigFile" type="string"  value="/home/trimbot/Trimbot_config/calibration_rigiblick.yaml" />
+    <param name="cameraConfigFile" type="string"  value="/home/trimbot/Trimbot_config/calibration.yaml" />
     <rosparam command="load" file="$(find uvc_ros_driver)/params/homography_mapping.yaml" />
   </node>
   
   <!-- load configuration -->
-  <node pkg="dynamic_reconfigure" name="reconfigure_node_0" type="dynparam" args="load /uvc_camera /home/trimbot/Trimbot_config/param_config_rigiblick.yaml" output="screen"/>
+  <node pkg="dynamic_reconfigure" name="reconfigure_node_0" type="dynparam" args="load /uvc_camera /home/trimbot/Trimbot_config/param_config_trimbot.yaml" output="screen"/>
 
 </launch>

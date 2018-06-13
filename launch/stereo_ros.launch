@@ -1,13 +1,15 @@
 <launch>    
+
         <node ns="uvc_camera" pkg="stereo_image_proc" type="stereo_image_proc" name="stereo_image_proc" output="screen">
-            <remap to="cam_4/image_raw" from="left/image_raw"/>
-            <remap to="cam_5/image_raw" from="right/image_raw"/>
-            <remap to="cam_4/camera_info" from="left/camera_info"/>
-            <remap to="cam_5/camera_info" from="right/camera_info"/>
+            <remap to="cam_0/image_raw" from="left/image_raw"/>
+            <remap to="cam_1/image_raw" from="right/image_raw"/>
+            <remap to="cam_0/camera_info" from="left/camera_info"/>
+            <remap to="cam_1/camera_info" from="right/camera_info"/>
         </node>
 
         <node name="stereo_view" pkg="image_view" type="stereo_view" output="screen">
             <remap from="stereo" to="uvc_camera"/>
             <remap from="image" to="image_rect"/>
         </node>
+
 </launch>
