@@ -2,17 +2,16 @@
 
 	<arg name="left_camera_index" default="0" />
 	<arg name="right_camera_index" default="1" />
-        <node ns="uvc_camera" pkg="stereo_image_proc" type="stereo_image_proc" name="stereo_image_proc" output="screen">
+        <node ns="uvc_camera" pkg="stereo_image_proc" type="stereo_image_proc" name="stereo_image_proc_parsed" output="screen">
             <remap to="cam_$(arg left_camera_index)/image_raw" from="left/image_raw"/>
             <remap to="cam_$(arg right_camera_index)/image_raw" from="right/image_raw"/>
-            <remap to="cam_$(arg left_camera_index)/camera_info" from="left/camera_info"/>
-            <remap to="cam_$(arg right_camera_index)/camera_info" from="right/camera_info"/>
+            <remap to="cam_$(arg left_camera_index)/parsed_camera_info" from="left/camera_info"/>
+            <remap to="cam_$(arg right_camera_index)/parsed_camera_info" from="right/camera_info"/>
         </node>
 
-        <node name="stereo_view" pkg="image_view" type="stereo_view" output="screen">
+        <node name="stereo_view_parsed" pkg="image_view" type="stereo_view" output="screen">
             <remap from="stereo" to="uvc_camera"/>
             <remap from="image" to="image_rect"/>
         </node>
 
 </launch>
-
