@@ -32,6 +32,7 @@ find_package(catkin REQUIRED COMPONENTS
   image_transport
   dynamic_reconfigure
   message_generation
+  cv_bridge
 )
 
 ## System dependencies are found with CMake's conventions
@@ -167,6 +168,7 @@ target_link_libraries(uvc_ros_driver
   ${catkin_LIBRARIES}
   ${libuvc_LIBRARIES}
   ${YamlCpp_LIBRARIES}
+  ${OpenCV_LIBRARIES}
 )
 
 ## Add cmake target dependencies of the library
@@ -178,6 +180,9 @@ target_link_libraries(uvc_ros_driver
 add_executable(uvc_ros_driver_node
 	src/nodes/uvc_ros_driver_node.cpp
 )
+add_executable(depth_map_colorizer
+	src/nodes/depth_map_colorizer_node.cpp
+)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -188,6 +193,10 @@ target_link_libraries(uvc_ros_driver_node
   uvc_ros_driver
   ${catkin_LIBRARIES}
   ${YamlCpp_LIBRARIES}
+)
+
+target_link_libraries(depth_map_colorizer
+  ${catkin_LIBRARIES}
 )
 
 #############

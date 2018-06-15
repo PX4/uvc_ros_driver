@@ -14,5 +14,7 @@
             <remap from="image" to="image_rect"/>
         </node>
 
+	<param name="uvc_camera/stereo_image_proc/disparity_range" value="32" type="int" />
+
 </launch>
 
