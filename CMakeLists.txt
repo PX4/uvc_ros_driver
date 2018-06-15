@@ -18,6 +18,8 @@ else()
   pkg_check_modules(YamlCpp REQUIRED yaml-cpp>=0.5)
 endif()
 
+find_package(libuvc REQUIRED)
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -147,8 +149,8 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
   ${Eigen3_INCLUDE_DIRS}
   ${YamlCpp_INCLUDE_DIRS}
+  ${libuvc_INCLUDE_DIRS}
   include
-  /usr/include/libusb-1.0
   src/nodes/c_library
   src/nodes
 )
@@ -162,10 +164,8 @@ add_library(uvc_ros_driver SHARED
 )
 
 target_link_libraries(uvc_ros_driver
-  #yaml-cpp
   ${catkin_LIBRARIES}
-  #${LibUVC_LIBRARIES}
-  /usr/local/lib/libuvc.so #TODO link by usign find_package
+  ${libuvc_LIBRARIES}
   ${YamlCpp_LIBRARIES}
 )
 
