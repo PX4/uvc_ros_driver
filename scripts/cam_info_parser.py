@@ -1,17 +1,34 @@
+#!/usr/bin/env python
+#
+# Author: Dominik Honegger <dominiho at inf.ethz.ch>
+#
+# Script to parse camera_info messages present in Trimbot Dataset and
+# publish new ROS compatible parsed_info_messages
+#
+# Subscribes to uvc_camera/cam_x/camera_info and publishes new camera_info
+# message names uvc_camera/cam_x/parsed_camera_info
 
 import rospy
 import yaml
 import cv2
 import numpy as np
 import time
+import argparse
 from sensor_msgs.msg import CameraInfo
 
 publisher_left = 0;
 publisher_right = 0;
 focal_length_FPGA = 0;
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--calibration_path", required=True, help="Path to yaml file containing " +\
+                                             "camera calibration data")
+    parser.add_argument("--left_camera_index", required=True, help="Number of left camera")
+    args = parser.parse_args()
+    return args
+
 def callback(data):
-    
     K = data.K
     global focal_length_FPGA 
     focal_length_FPGA = K[0]
@@ -22,47 +39,26 @@ def callback(data):
     publisher_right.publish(camera_info_msg1)
 
 if __name__ == "__main__":
-    # Get fname from command line (cmd line input required)
-    import argparse
-    arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument("filename", help="Path to yaml file containing " +\
-                                             "camera calibration data")
-    arg_parser.add_argument("left_cam_nr", help="Number of left camera")
-    args = arg_parser.parse_args()
-    filename = args.filename
-    cam_nr1 = int(args.left_cam_nr)
+
+    # parse arguments from call
+    args = parse_args()
+    filename = args.calibration_path
+    cam_nr1 = int(args.left_camera_index)
     cam_nr2 = cam_nr1 + 1
 
     publisher_left = rospy.Publisher("uvc_camera/cam_"+str(cam_nr1)+"/parsed_camera_info", CameraInfo, queue_size=10)
     publisher_right = rospy.Publisher("uvc_camera/cam_"+str(cam_nr2)+"/parsed_camera_info", CameraInfo, queue_size=10)
 
     # Initialize publisher node
-    rospy.init_node("camera_info_publisher", anonymous=True)
+    rospy.init_node('cam_info_parser', anonymous=True)
     rospy.Subscriber("/uvc_camera/cam_" + str(cam_nr1) +"/camera_info",CameraInfo,callback)
     camera_info_msg0 = CameraInfo()
     camera_info_msg1 = CameraInfo()
 
-    """
-    Parameters
-    ----------
-    yaml_fname : str
-        Path to yaml file containing camera calibration data
-    left_camera_nr : int
-	Number of the left camera in the stereo setup
-
-    Returns
-    -------
-    camera_info_msg0 : sensor_msgs.msg.CameraInfo
-        A sensor_msgs.msg.CameraInfo message containing the camera calibration
-        data of the left camera
-    camera_info_msg1 : sensor_msgs.msg.CameraInfo
-        A sensor_msgs.msg.CameraInfo message containing the camera calibration
-        data of the right camera
-    """
     # Load data from file
     with open(filename, "r") as file_handle:
         calib_data = yaml.load(file_handle)
-    # Parse
+    # Parse calibration.yaml file to get intrinsic and extrinsic params of stereo pair
     D0 = np.array(calib_data["cam"+str(cam_nr1)]["distortion_coeffs"])
     D1 = np.array(calib_data["cam"+str(cam_nr2)]["distortion_coeffs"])
     K0 = np.array([[calib_data["cam"+str(cam_nr1)]["intrinsics"][0], 0, calib_data["cam"+str(cam_nr1)]["intrinsics"][2]], [0, calib_data["cam"+str(cam_nr1)]["intrinsics"][1], calib_data["cam"+str(cam_nr1)]["intrinsics"][3]], [0, 0, 1]])    
@@ -71,12 +67,9 @@ if __name__ == "__main__":
     R = np.array([[calib_data["cam"+str(cam_nr2)]["T_cn_cnm1"][0][0], calib_data["cam"+str(cam_nr2)]["T_cn_cnm1"][0][1], calib_data["cam"+str(cam_nr2)]["T_cn_cnm1"][0][2]], [calib_data["cam"+str(cam_nr2)]["T_cn_cnm1"][1][0], calib_data["cam"+str(cam_nr2)]["T_cn_cnm1"][1][1], calib_data["cam"+str(cam_nr2)]["T_cn_cnm1"][1][2]], [calib_data["cam"+str(cam_nr2)]["T_cn_cnm1"][2][0], calib_data["cam"+str(cam_nr2)]["T_cn_cnm1"][2][1], calib_data["cam"+str(cam_nr2)]["T_cn_cnm1"][2][2]]]) 
     T = np.array([calib_data["cam"+str(cam_nr2)]["T_cn_cnm1"][0][3],calib_data["cam"+str(cam_nr2)]["T_cn_cnm1"][1][3],calib_data["cam"+str(cam_nr2)]["T_cn_cnm1"][2][3]])
 
-
-    # use opencv stereo rectify to calculate new intrinsics and procetion
+    # use opencv stereo rectify to calculate new intrinsics and projection
     a = 1
     R1, R2, P1, P2, Q, roi1, roi2 = cv2.stereoRectify(K0, D0, K1, D1, (res[0],res[1]), R, T, alpha = a)
-
-    #print "focal length FPGA" 
 
     rate = rospy.Rate(2000)
 
@@ -85,20 +78,13 @@ if __name__ == "__main__":
          if (focal_length_FPGA > 0):
 		break
          rate.sleep()
-    #print focal_length_FPGA
-    #print "start focal lenght"
-    #print P1[0][0]
 
+    # change alpha parameter (zoom) to achieve similar focal length than FPGA
     while (focal_length_FPGA > P1[0][0]) and not rospy.is_shutdown():
-
-    #apply a zoom of approx 30 pixels to new focal length to match with FPGA rectification
 	a = a - 0.001
         R1, R2, P1, P2, Q, roi1, roi2 = cv2.stereoRectify(K0, D0, K1, D1, (res[0],res[1]), R, T, alpha = a)
-        rate.sleep()
-        
-    #print "final focal length"
-    #print P1[0][0]
-    
+        rate.sleep()   
+
     # fill values in camera info messages
     camera_info_msg0.width = res[0]
     camera_info_msg0.height = res[1]
@@ -116,9 +102,6 @@ if __name__ == "__main__":
     camera_info_msg1.P = P2.reshape(12,1)
     camera_info_msg1.distortion_model = "plumb_bob"
 
-    rate = rospy.Rate(20)
-
-    # Run node
-    while not rospy.is_shutdown():
-         rate.sleep()
+    # Run node and wait for callbacks
+    rospy.spin()
 
