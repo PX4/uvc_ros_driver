@@ -23,16 +23,16 @@ public:
 	ProjectionModelTypes projection_type_;
 	DistortionModelTypes distortion_type_;
 
-	float focal_length_u_;
-	float focal_length_v_;
-	float principal_point_u_;
-	float principal_point_v_;
-	float k1_;
-	float k2_;
-	float r1_;
-	float r2_;
-	float t_[3];
-	float R_[9];
+	double focal_length_u_;
+	double focal_length_v_;
+	double principal_point_u_;
+	double principal_point_v_;
+	double k1_;
+	double k2_;
+	double r1_;
+	double r2_;
+	double t_[3];
+	double R_[9];
 };
 
 class FPGACalibration
