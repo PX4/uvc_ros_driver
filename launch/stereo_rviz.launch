@@ -1,0 +1,130 @@
+<launch>    
+
+	<arg name="calibration_file" default="/home/trimbot/Datasets/2018-06-26_10-15-12/camchain-hometrimbotDatasets2018-06-26_10-15-122018-06-26-10-15-12.yaml" />
+
+	<node pkg="uvc_ros_driver" name="parser0" type="cam_info_parser.py" output="screen" args="--left_camera_index 0 --calibration_path $(arg calibration_file)">
+	</node>
+	<node pkg="uvc_ros_driver" name="parser1" type="cam_info_parser.py" output="screen" args="--left_camera_index 2 --calibration_path $(arg calibration_file)">
+	</node>
+	<node pkg="uvc_ros_driver" name="parser2" type="cam_info_parser.py" output="screen" args="--left_camera_index 4 --calibration_path $(arg calibration_file)">
+	</node>
+	<node pkg="uvc_ros_driver" name="parser3" type="cam_info_parser.py" output="screen" args="--left_camera_index 6 --calibration_path $(arg calibration_file)">
+	</node>
+	<node pkg="uvc_ros_driver" name="parser4" type="cam_info_parser.py" output="screen" args="--left_camera_index 8 --calibration_path $(arg calibration_file)">
+	</node>
+
+	<node pkg="uvc_ros_driver" name="dispparser0" type="disparity_parser.py" output="screen" args="--left_camera_index 0 --calibration_path $(arg calibration_file)">
+	</node>
+
+	<node pkg="uvc_ros_driver" name="dispparser1" type="disparity_parser.py" output="screen" args="--left_camera_index 2 --calibration_path $(arg calibration_file)">
+	</node>
+
+	<node pkg="uvc_ros_driver" name="dispparser2" type="disparity_parser.py" output="screen" args="--left_camera_index 4 --calibration_path $(arg calibration_file)">
+	</node>
+
+	<node pkg="uvc_ros_driver" name="dispparser3" type="disparity_parser.py" output="screen" args="--left_camera_index 6 --calibration_path $(arg calibration_file)">
+	</node>
+
+	<node pkg="uvc_ros_driver" name="dispparser4" type="disparity_parser.py" output="screen" args="--left_camera_index 8 --calibration_path $(arg calibration_file)">
+	</node>
+
+
+        <node pkg="tf" type="static_transform_publisher" name="camera_link_pair0" args="0 -0.1 -0.4 0 0 0 frontcam_optical_link cam_0_optical_frame 10" />
+
+
+	<node pkg="uvc_ros_driver" name="camera_tf_broadcaster" type="camera_tf_broadcaster.py" output="screen" args="--calibration_path $(arg calibration_file)">
+	</node>
+
+	<arg name="left_camera_index1" default="0" />
+	<arg name="right_camera_index1" default="1" />
+        <node ns="pair0" pkg="stereo_image_proc" type="stereo_image_proc" name="stereo_image_proc_parsed0" output="screen">
+            <remap to="/uvc_camera/cam_$(arg left_camera_index1)/image_raw" from="left/image_raw"/>
+            <remap to="/uvc_camera/cam_$(arg right_camera_index1)/image_raw" from="right/image_raw"/>
+            <remap to="/uvc_camera/cam_$(arg left_camera_index1)/parsed_camera_info" from="left/camera_info"/>
+            <remap to="/uvc_camera/cam_$(arg right_camera_index1)/parsed_camera_info" from="right/camera_info"/>
+        </node>
+
+        <node ns="uvc_camera/cam_$(arg left_camera_index1)" pkg="nodelet" type="nodelet" name="nodelet_manager" output="screen" args="manager"/>
+
+        <node ns="uvc_camera/cam_$(arg left_camera_index1)" pkg="nodelet" type="nodelet" name="disparitytopointcloud2" args="load stereo_image_proc/point_cloud2 nodelet_manager" output="screen">
+            <remap to="/pair0/left/image_rect_color" from="left/image_rect_color"/>
+            <remap to="/uvc_camera/cam_$(arg left_camera_index1)/disparity" from="disparity"/>
+            <remap to="/uvc_camera/cam_$(arg left_camera_index1)/parsed_camera_info" from="left/camera_info"/>
+            <remap to="/uvc_camera/cam_$(arg right_camera_index1)/parsed_camera_info" from="right/camera_info"/>
+        </node>
+
+	<arg name="left_camera_index2" default="2" />
+	<arg name="right_camera_index2" default="3" />
+        <node ns="pair1" pkg="stereo_image_proc" type="stereo_image_proc" name="stereo_image_proc_parsed1" output="screen">
+            <remap to="/uvc_camera/cam_$(arg left_camera_index2)/image_raw" from="left/image_raw"/>
+            <remap to="/uvc_camera/cam_$(arg right_camera_index2)/image_raw" from="right/image_raw"/>
+            <remap to="/uvc_camera/cam_$(arg left_camera_index2)/parsed_camera_info" from="left/camera_info"/>
+            <remap to="/uvc_camera/cam_$(arg right_camera_index2)/parsed_camera_info" from="right/camera_info"/>
+        </node>
+
+        <node ns="uvc_camera/cam_$(arg left_camera_index2)" pkg="nodelet" type="nodelet" name="nodelet_manager" output="screen" args="manager"/>
+
+        <node ns="uvc_camera/cam_$(arg left_camera_index2)" pkg="nodelet" type="nodelet" name="disparitytopointcloud2" args="load stereo_image_proc/point_cloud2 nodelet_manager" output="screen">
+            <remap to="/pair1/left/image_rect_color" from="left/image_rect_color"/>
+            <remap to="/uvc_camera/cam_$(arg left_camera_index2)/disparity" from="disparity"/>
+            <remap to="/uvc_camera/cam_$(arg left_camera_index2)/parsed_camera_info" from="left/camera_info"/>
+            <remap to="/uvc_camera/cam_$(arg right_camera_index2)/parsed_camera_info" from="right/camera_info"/>
+        </node>
+
+	<arg name="left_camera_index3" default="4" />
+	<arg name="right_camera_index3" default="5" />
+        <node ns="pair2" pkg="stereo_image_proc" type="stereo_image_proc" name="stereo_image_proc_parsed2" output="screen">
+            <remap to="/uvc_camera/cam_$(arg left_camera_index3)/image_raw" from="left/image_raw"/>
+            <remap to="/uvc_camera/cam_$(arg right_camera_index3)/image_raw" from="right/image_raw"/>
+            <remap to="/uvc_camera/cam_$(arg left_camera_index3)/parsed_camera_info" from="left/camera_info"/>
+            <remap to="/uvc_camera/cam_$(arg right_camera_index3)/parsed_camera_info" from="right/camera_info"/>
+        </node>
+
+        <node ns="uvc_camera/cam_$(arg left_camera_index3)" pkg="nodelet" type="nodelet" name="nodelet_manager" output="screen" args="manager"/>
+
+        <node ns="uvc_camera/cam_$(arg left_camera_index3)" pkg="nodelet" type="nodelet" name="disparitytopointcloud2" args="load stereo_image_proc/point_cloud2 nodelet_manager" output="screen">
+            <remap to="/pair2/left/image_rect_color" from="left/image_rect_color"/>
+            <remap to="/uvc_camera/cam_$(arg left_camera_index3)/disparity" from="disparity"/>
+            <remap to="/uvc_camera/cam_$(arg left_camera_index3)/parsed_camera_info" from="left/camera_info"/>
+            <remap to="/uvc_camera/cam_$(arg right_camera_index3)/parsed_camera_info" from="right/camera_info"/>
+        </node>
+
+	<arg name="left_camera_index4" default="6" />
+	<arg name="right_camera_index4" default="7" />
+        <node ns="pair3" pkg="stereo_image_proc" type="stereo_image_proc" name="stereo_image_proc_parsed3" output="screen">
+            <remap to="/uvc_camera/cam_$(arg left_camera_index4)/image_raw" from="left/image_raw"/>
+            <remap to="/uvc_camera/cam_$(arg right_camera_index4)/image_raw" from="right/image_raw"/>
+            <remap to="/uvc_camera/cam_$(arg left_camera_index4)/parsed_camera_info" from="left/camera_info"/>
+            <remap to="/uvc_camera/cam_$(arg right_camera_index4)/parsed_camera_info" from="right/camera_info"/>
+        </node>
+
+
+        <node ns="uvc_camera/cam_$(arg left_camera_index4)" pkg="nodelet" type="nodelet" name="nodelet_manager" output="screen" args="manager"/>
+
+        <node ns="uvc_camera/cam_$(arg left_camera_index4)" pkg="nodelet" type="nodelet" name="disparitytopointcloud2" args="load stereo_image_proc/point_cloud2 nodelet_manager" output="screen">
+            <remap to="/pair3/left/image_rect_color" from="left/image_rect_color"/>
+            <remap to="/uvc_camera/cam_$(arg left_camera_index4)/disparity" from="disparity"/>
+            <remap to="/uvc_camera/cam_$(arg left_camera_index4)/parsed_camera_info" from="left/camera_info"/>
+            <remap to="/uvc_camera/cam_$(arg right_camera_index4)/parsed_camera_info" from="right/camera_info"/>
+        </node>
+
+	<arg name="left_camera_index5" default="8" />
+	<arg name="right_camera_index5" default="9" />
+        <node ns="pair4" pkg="stereo_image_proc" type="stereo_image_proc" name="stereo_image_proc_parsed4" output="screen">
+            <remap to="/uvc_camera/cam_$(arg left_camera_index5)/image_raw" from="left/image_raw"/>
+            <remap to="/uvc_camera/cam_$(arg right_camera_index5)/image_raw" from="right/image_raw"/>
+            <remap to="/uvc_camera/cam_$(arg left_camera_index5)/parsed_camera_info" from="left/camera_info"/>
+            <remap to="/uvc_camera/cam_$(arg right_camera_index5)/parsed_camera_info" from="right/camera_info"/>
+        </node>
+
+        <node ns="uvc_camera/cam_$(arg left_camera_index5)" pkg="nodelet" type="nodelet" name="nodelet_manager" output="screen" args="manager"/>
+
+        <node ns="uvc_camera/cam_$(arg left_camera_index5)" pkg="nodelet" type="nodelet" name="disparitytopointcloud2" args="load stereo_image_proc/point_cloud2 nodelet_manager" output="screen">
+            <remap to="/pair4/left/image_rect_color" from="left/image_rect_color"/>
+            <remap to="/uvc_camera/cam_$(arg left_camera_index5)/disparity" from="disparity"/>
+            <remap to="/uvc_camera/cam_$(arg left_camera_index5)/parsed_camera_info" from="left/camera_info"/>
+            <remap to="/uvc_camera/cam_$(arg right_camera_index5)/parsed_camera_info" from="right/camera_info"/>
+        </node>
+
+
+</launch>
