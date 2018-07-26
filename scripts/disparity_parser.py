@@ -57,6 +57,7 @@ def callbackimage(data):
     testframe = bridge.imgmsg_to_cv2(data, desired_encoding="passthrough")
     #testframe = testframe >> 3
     floatframe = cv2.normalize((testframe).astype('float32'),None,alpha = 0,beta = 31,norm_type=cv2.NORM_MINMAX,dtype = cv2.CV_32F)
+    floatframe = floatframe - 2.0
     #print floatframe
 
     disparity_msg.image = bridge.cv2_to_imgmsg(floatframe, "32FC1")

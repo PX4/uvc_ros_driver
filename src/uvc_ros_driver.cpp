@@ -523,7 +523,7 @@ void uvcROSDriver::setCalibration(CameraParameters camParams)
 			// set camera info rotation
 			setCameraInfoRotation(*ci, R_[i]);
 			// updated camera parameters with new intrinsics
-			setCameraInfoProjection(*ci, f_[i], f_[i], p_[i](0), p_[i](1),(-f_[i]*cams[i].projection_model_.t_[0]),0.0);
+			setCameraInfoProjection(*ci, f_[i], f_[i], p_[i](0), p_[i](1),(f_[i]*cams[i].projection_model_.t_[0]),0.0);
 			// set camera info distortion model
 			setCameraInfoDistortionMdl(*ci, cams[i].projection_model_.distortion_type_);
 			// set camera info distortion parameters

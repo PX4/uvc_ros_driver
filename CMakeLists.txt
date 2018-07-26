@@ -183,6 +183,9 @@ add_executable(uvc_ros_driver_node
 add_executable(depth_map_colorizer
 	src/nodes/depth_map_colorizer_node.cpp
 )
+add_executable(ros_disparity_map_colorizer
+	src/nodes/ros_disparity_map_colorizer_node.cpp
+)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -196,6 +199,10 @@ target_link_libraries(uvc_ros_driver_node
 )
 
 target_link_libraries(depth_map_colorizer
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(ros_disparity_map_colorizer
   ${catkin_LIBRARIES}
 )
 

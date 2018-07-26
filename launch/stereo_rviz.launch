@@ -29,7 +29,7 @@
 	</node>
 
 
-        <node pkg="tf" type="static_transform_publisher" name="camera_link_pair0" args="0 -0.1 -0.4 0 0 0 frontcam_optical_link cam_0_optical_frame 10" />
+        <node pkg="tf" type="static_transform_publisher" name="camera_link_pair0" args="0 -0.1 -0.25 0 0 0 frontcam_optical_link cam_0_optical_frame 10" />
 
 
 	<node pkg="uvc_ros_driver" name="camera_tf_broadcaster" type="camera_tf_broadcaster.py" output="screen" args="--calibration_path $(arg calibration_file)">

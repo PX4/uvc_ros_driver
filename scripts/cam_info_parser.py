@@ -25,18 +25,28 @@ def parse_args():
     parser.add_argument("--calibration_path", required=True, help="Path to yaml file containing " +\
                                              "camera calibration data")
     parser.add_argument("--left_camera_index", required=True, help="Number of left camera")
-    args = parser.parse_args()
+    args = parser.parse_args(rospy.myargv()[1:])
     return args
 
 def callback(data):
     K = data.K
+    P = data.P
     global focal_length_FPGA 
-    focal_length_FPGA = K[0]
+    #check if P matrix has valid value as in new datasets
+    #otherwise take focallength from K matrix (for old datasets)
+    if(P[0] > 0):
+	focal_length_FPGA = P[0]
+    else:
+        focal_length_FPGA = K[0]
     stamp = data.header.stamp
     camera_info_msg0.header.stamp = stamp
     camera_info_msg1.header.stamp = stamp
+    camera_info_msg0.header.frame_id = data.header.frame_id
+    camera_info_msg1.header.frame_id = data.header.frame_id
     publisher_left.publish(camera_info_msg0)
+    publisher_left2.publish(camera_info_msg0)
     publisher_right.publish(camera_info_msg1)
+    publisher_right2.publish(camera_info_msg1)
 
 if __name__ == "__main__":
 
@@ -47,7 +57,9 @@ if __name__ == "__main__":
     cam_nr2 = cam_nr1 + 1
 
     publisher_left = rospy.Publisher("uvc_camera/cam_"+str(cam_nr1)+"/parsed_camera_info", CameraInfo, queue_size=10)
+    publisher_left2 = rospy.Publisher("uvc_camera/cam_"+str(cam_nr1+10)+"/camera_info", CameraInfo, queue_size=10)
     publisher_right = rospy.Publisher("uvc_camera/cam_"+str(cam_nr2)+"/parsed_camera_info", CameraInfo, queue_size=10)
+    publisher_right2 = rospy.Publisher("uvc_camera/cam_"+str(cam_nr2+10)+"/camera_info", CameraInfo, queue_size=10)
 
     # Initialize publisher node
     rospy.init_node('cam_info_parser', anonymous=True)
@@ -68,7 +80,7 @@ if __name__ == "__main__":
     T = np.array([calib_data["cam"+str(cam_nr2)]["T_cn_cnm1"][0][3],calib_data["cam"+str(cam_nr2)]["T_cn_cnm1"][1][3],calib_data["cam"+str(cam_nr2)]["T_cn_cnm1"][2][3]])
 
     # use opencv stereo rectify to calculate new intrinsics and projection
-    a = 1
+    a = 1.0
     R1, R2, P1, P2, Q, roi1, roi2 = cv2.stereoRectify(K0, D0, K1, D1, (res[0],res[1]), R, T, alpha = a)
 
     rate = rospy.Rate(2000)
@@ -78,12 +90,16 @@ if __name__ == "__main__":
          if (focal_length_FPGA > 0):
 		break
          rate.sleep()
-
     # change alpha parameter (zoom) to achieve similar focal length than FPGA
     while (focal_length_FPGA > P1[0][0]) and not rospy.is_shutdown():
+        if(a < 0.001 ):
+            print "error finding matching focallength"
+            break
 	a = a - 0.001
         R1, R2, P1, P2, Q, roi1, roi2 = cv2.stereoRectify(K0, D0, K1, D1, (res[0],res[1]), R, T, alpha = a)
-        rate.sleep()   
+        rate.sleep() 
+
+    print "left cam number:", cam_nr1, "focal length fpga:", focal_length_FPGA, "focal length ROS:", P1[0][0]
 
     # fill values in camera info messages
     camera_info_msg0.width = res[0]

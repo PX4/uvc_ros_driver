@@ -354,7 +354,7 @@ class DepthMapPublisher {
 	cv::Point3_<unsigned char> spectralColor(int hue) {
 		if (hue < MIN_DEPTH) {
 			// No depth information
-			return cv::Point3_<unsigned char>(0,0,0); 
+			return cv::Point3_<unsigned char>(150,150,150); 
 		}
 
 		// opencv int index = (*d - min_disparity) * multiplier + 0.5;
