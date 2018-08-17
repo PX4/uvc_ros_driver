@@ -92,7 +92,7 @@ def dispimage_callback(data):
 			uv = cameraModel.project3dToPixel( rotatedPoint )
 
 			distance = math.sqrt( np.sum( np.array( point[ :3 ] ) ** 2 ) )
-                        disparity = 540*0.03/distance
+                        disparity = 430*0.03/distance
 
 			# check if the uv point is valid
 			if uv[0] >= 0 and uv[0] <= data.width and uv[1] >= 0 and uv[1] <= data.height and rotatedPoint[2] > 0:
