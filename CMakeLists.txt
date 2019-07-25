@@ -42,7 +42,7 @@ include_directories(${EIGEN3_INCLUDE_DIR})
 add_definitions(${EIGEN3_DEFINITIONS})
 
 # Add dynamic reconfigure API.
-generate_dynamic_reconfigure_options(cfg/uvc_ros_driver_node.cfg)
+generate_dynamic_reconfigure_options(cfg/UvcDriver.cfg)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
